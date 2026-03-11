@@ -1,0 +1,75 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: console-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mindvault_console
+      POSTGRES_USER: mvault
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - console
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mvault -d mindvault_console"]
+      interval: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: console-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - console
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    container_name: console-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://mvault:${DB_PASSWORD}@db:5432/mindvault_console
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: https://console.mvault.ru
+      PORT: 3001
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - console
+    ports:
+      - "3001:3001"
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    container_name: console-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: https://console.mvault.ru
+    networks:
+      - console
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
+  redis_data:
+
+networks:
+  console:
+    driver: bridge

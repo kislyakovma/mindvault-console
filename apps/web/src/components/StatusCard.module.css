@@ -1,0 +1,39 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+}
+
+.top { margin-bottom: 12px; }
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.badge.muted { background: rgba(107,107,138,0.2); color: var(--muted); }
+.badge.yellow { background: rgba(250,173,20,0.15); color: #faad14; }
+.badge.blue { background: rgba(64,169,255,0.15); color: #40a9ff; }
+.badge.green { background: rgba(82,196,26,0.15); color: #52c41a; }
+.badge.red { background: rgba(255,77,79,0.15); color: #ff4d4f; }
+
+.desc { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+
+.cta {
+  display: inline-block;
+  background: var(--lime);
+  color: #0a0a0f;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 24px;
+  border-radius: var(--radius);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.cta:hover { transform: translateY(-1px); box-shadow: 0 0 20px var(--lime-glow); }

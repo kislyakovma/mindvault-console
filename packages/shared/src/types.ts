@@ -1,0 +1,7 @@
+export type Role = 'USER' | 'ADMIN'
+export type ProvisioningStatus = 'DRAFT' | 'PAYMENT_REQUIRED' | 'QUEUED' | 'PROVISIONING' | 'READY' | 'FAILED' | 'SUSPENDED'
+export type ProvisioningStep = 'NONE' | 'CREATE_SERVER' | 'WAIT_SSH' | 'APPLY_TERRAFORM' | 'HEALTHCHECK' | 'FINALIZE'
+export type BriefStatus = 'DRAFT' | 'SUBMITTED'
+export type SubscriptionStatus = 'ACTIVE' | 'SUSPENDED' | 'CANCELED'
+export type PaymentStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'REFUNDED'
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'CLOSED'

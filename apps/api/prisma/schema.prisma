@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  sessions          Session[]
+  brief             Brief?
+  subscription      Subscription?
+  payments          Payment[]
+  provisioningJob   ProvisioningJob?
+  supportTickets    SupportTicket[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  refreshTokenHash String   @map("refresh_token_hash")
+  userAgent        String?  @map("user_agent")
+  ip               String?
+  expiresAt        DateTime @map("expires_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Brief {
+  id        String      @id @default(uuid())
+  userId    String      @unique @map("user_id")
+  dataJson  Json        @map("data_json")
+  status    BriefStatus @default(DRAFT)
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("briefs")
+}
+
+model Subscription {
+  id               String             @id @default(uuid())
+  userId           String             @unique @map("user_id")
+  status           SubscriptionStatus @default(ACTIVE)
+  provider         String?
+  currentPeriodEnd DateTime?          @map("current_period_end")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  subscriptionId  String?       @map("subscription_id")
+  provider        String
+  providerPaymentId String      @unique @map("provider_payment_id")
+  amount          Int
+  currency        String        @default("RUB")
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  events       PaymentEvent[]
+
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id             String   @id @default(uuid())
+  provider       String
+  providerEventId String  @unique @map("provider_event_id")
+  paymentId      String?  @map("payment_id")
+  payloadJson    Json     @map("payload_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@map("payment_events")
+}
+
+model ProvisioningJob {
+  id           String              @id @default(uuid())
+  userId       String              @unique @map("user_id")
+  status       ProvisioningStatus  @default(DRAFT)
+  step         ProvisioningStep    @default(NONE)
+  serverId     String?             @map("server_id")
+  serverIp     String?             @map("server_ip")
+  logsShort    String?             @map("logs_short")
+  errorCode    String?             @map("error_code")
+  errorMessage String?             @map("error_message")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("provisioning_jobs")
+}
+
+model SupportTicket {
+  id        String        @id @default(uuid())
+  userId    String        @map("user_id")
+  subject   String
+  status    TicketStatus  @default(OPEN)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages SupportMessage[]
+
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id         String     @id @default(uuid())
+  ticketId   String     @map("ticket_id")
+  authorType AuthorType @map("author_type")
+  message    String
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("support_messages")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String   @map("actor_user_id")
+  action      String
+  targetType  String?  @map("target_type")
+  targetId    String?  @map("target_id")
+  metaJson    Json?    @map("meta_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User @relation(fields: [actorUserId], references: [id])
+
+  @@map("audit_logs")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum BriefStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum ProvisioningStatus {
+  DRAFT
+  PAYMENT_REQUIRED
+  QUEUED
+  PROVISIONING
+  READY
+  FAILED
+  SUSPENDED
+}
+
+enum ProvisioningStep {
+  NONE
+  CREATE_SERVER
+  WAIT_SSH
+  APPLY_TERRAFORM
+  HEALTHCHECK
+  FINALIZE
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum AuthorType {
+  USER
+  ADMIN
+}
