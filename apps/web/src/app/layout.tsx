@@ -4,6 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'MindVault Console',
   description: 'Личный кабинет MindVault',
+  icons: { icon: '/favicon.svg' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
