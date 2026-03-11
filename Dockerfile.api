@@ -1,4 +1,4 @@
-FROM node:20-alpine AS deps
+FROM node:20-slim AS deps
 WORKDIR /app
 COPY package.json turbo.json ./
 COPY apps/api/package.json ./apps/api/
@@ -6,6 +6,7 @@ COPY packages/shared/package.json ./packages/shared/
 RUN npm install --legacy-peer-deps
 
 FROM deps AS builder
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
 RUN cd apps/api && npx prisma generate
