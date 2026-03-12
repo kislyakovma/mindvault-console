@@ -6,7 +6,7 @@ import styles from './Sidebar.module.css'
 
 const links = [
   { href: '/app', label: 'Статус', icon: '⚡' },
-  { href: '/app/brief', label: 'Бриф', icon: '📋' },
+  { href: '/app/brief', label: 'Боты', icon: '📋' },
   { href: '/app/billing', label: 'Оплата', icon: '💳' },
   { href: '/app/support', label: 'Поддержка', icon: '💬' },
   { href: '/app/account', label: 'Аккаунт', icon: '👤' },

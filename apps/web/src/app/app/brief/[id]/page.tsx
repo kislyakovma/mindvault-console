@@ -13,7 +13,7 @@ export default function BriefEditorPage() {
   const router = useRouter()
   const id = params?.id as string
 
-  const [briefTitle, setBriefTitle] = useState('Мой бриф')
+  const [briefTitle, setBriefTitle] = useState('Мой бот')
   const [botName, setBotName] = useState('')
   const [tg, setTg] = useState('')
   const [role, setRole] = useState('')
@@ -74,12 +74,12 @@ export default function BriefEditorPage() {
   return (
     <div className={styles.page}>
       <div className={styles.editorHeader}>
-        <Link href="/app/brief" className={styles.backLink}>← Все брифы</Link>
+        <Link href="/app/brief" className={styles.backLink}>← Все боты</Link>
         <input
           className={styles.titleInput}
           value={briefTitle}
           onChange={e => setBriefTitle(e.target.value)}
-          placeholder="Название брифа"
+          placeholder="Название бота"
         />
       </div>
 
@@ -192,7 +192,7 @@ export default function BriefEditorPage() {
       </div>
 
       <button className={styles.btn} onClick={handleSave}>
-        {saved ? 'Сохранено ✓' : 'Сохранить бриф →'}
+        {saved ? 'Сохранено ✓' : 'Сохранить →'}
       </button>
     </div>
   )

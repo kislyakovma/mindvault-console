@@ -102,10 +102,10 @@ export default function DashboardPage() {
                 />
                 <StatusItem
                   ok={sysStatus.hasBrief}
-                  label="Бриф"
+                  label="Боты"
                   sub={sysStatus.hasBrief
-                    ? `Заполнено брифов: ${sysStatus.briefs.filter(b => b.status === 'SUBMITTED').length}`
-                    : 'Расскажите о себе — бот настроится под вас'}
+                    ? `Настроено ботов: ${sysStatus.briefs.filter(b => b.status === 'SUBMITTED').length}`
+                    : 'Создайте бота и заполните настройки'}
                   href="/app/brief"
                 />
                 <StatusItem
@@ -115,7 +115,7 @@ export default function DashboardPage() {
                   href="/app/account"
                 />
                 {sysStatus.briefs.length === 0 ? (
-                  <StatusItem ok={false} label="Ассистент" sub="Будет запущен после заполнения брифа" href="/app/brief" />
+                  <StatusItem ok={false} label="Ассистент" sub="Создайте первого бота чтобы начать" href="/app/brief" />
                 ) : sysStatus.briefs.map(b => {
                   const st = BOT_STATUS[b.botStatus] || BOT_STATUS.pending
                   return (
@@ -134,10 +134,10 @@ export default function DashboardPage() {
           {!loading && !sysStatus.hasBrief && (
             <div className={styles.cta}>
               <div className={styles.ctaText}>
-                <div className={styles.ctaTitle}>Заполните бриф</div>
+                <div className={styles.ctaTitle}>Создайте бота</div>
                 <div className={styles.ctaSub}>Это займёт 5 минут. Бот узнает кто вы, чем занимаетесь и как с вами общаться.</div>
               </div>
-              <Link href="/app/brief" className={styles.ctaBtn}>Создать первый бриф →</Link>
+              <Link href="/app/brief" className={styles.ctaBtn}>Создать бота →</Link>
             </div>
           )}
         </div>
