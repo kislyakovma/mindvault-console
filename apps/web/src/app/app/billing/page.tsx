@@ -42,9 +42,12 @@ const SUB_STATUS: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'Отменена', color: '#6b6b8a' },
 }
 
-function formatRub(kopecks: number) {
-  const sign = kopecks >= 0 ? '+' : ''
-  return `${sign}${(kopecks / 100).toLocaleString('ru', { minimumFractionDigits: 2 })} руб.`
+function Rub({ kopecks, sign = false }: { kopecks: number; sign?: boolean }) {
+  const prefix = sign && kopecks > 0 ? '+' : ''
+  const isPositive = kopecks >= 0
+  return (
+    <>{prefix}{(Math.abs(kopecks) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub" style={{ color: 'inherit' }}>руб.</span></>
+  )
 }
 
 export default function BillingPage() {
@@ -91,7 +94,7 @@ export default function BillingPage() {
       {/* Баланс */}
       <div className={styles.balanceCard}>
         <div className={styles.balanceLabel}>Текущий баланс</div>
-        <div className={styles.balanceAmount}>{(( balance ?? 0) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })} руб.</div>
+        <div className={styles.balanceAmount}>{(( balance ?? 0) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub">руб.</span></div>
         <div className={styles.balanceSub}>Пополнение через платёжные инструменты — скоро</div>
         <button className={styles.topupBtn} disabled>Пополнить баланс</button>
       </div>
@@ -117,7 +120,7 @@ export default function BillingPage() {
                     </div>
                   </div>
                   <div className={styles.subRight}>
-                    <span className={styles.subPrice}>{(s.priceKopecks / 100).toLocaleString('ru')} руб./мес</span>
+                    <span className={styles.subPrice}>{(s.priceKopecks / 100).toLocaleString('ru')}{' '}<span className="rub">руб.</span>/мес</span>
                     {s.status === 'ACTIVE' && (
                       <button
                         className={styles.cancelBtn}
@@ -152,7 +155,7 @@ export default function BillingPage() {
                   <div className={styles.txDate}>{new Date(tx.createdAt).toLocaleString('ru')}</div>
                 </div>
                 <span className={styles.txAmount} style={{ color: TX_COLORS[tx.type] || 'var(--text)' }}>
-                  {formatRub(tx.amountKopecks)}
+                  {tx.amountKopecks >= 0 ? '+' : ''}{(tx.amountKopecks / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub">руб.</span>
                 </span>
               </div>
             ))}
