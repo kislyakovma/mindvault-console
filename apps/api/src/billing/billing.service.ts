@@ -2,9 +2,9 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service'
 
 export const PLAN_PRICES: Record<string, number> = {
-  PLUS: 49900,   // 499 руб/мес
-  PRO:  99900,   // 999 руб/мес
-  MAX:  199900,  // 1999 руб/мес
+  PLUS: 499900,   // 4999 руб/мес
+  PRO:  999900,   // 9999 руб/мес
+  MAX:  1999900,  // 19999 руб/мес
 }
 
 export const PLAN_LABELS: Record<string, string> = {
