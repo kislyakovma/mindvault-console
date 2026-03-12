@@ -25,7 +25,7 @@ export default function Sidebar() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
-      .then(d => { if (d?.user?.role === 'ADMIN') setIsAdmin(true) })
+      .then(d => { if (d?.user?.role === 'ADMIN' || d?.user?.role === 'SUPERADMIN') setIsAdmin(true) })
       .catch(() => {})
   }, [])
 
