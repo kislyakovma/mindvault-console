@@ -64,6 +64,18 @@ export class AuthService {
     await this.prisma.session.create({ data: { userId, refreshTokenHash, expiresAt } })
   }
 
+  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; telegramUsername?: string }) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName: data.firstName ?? undefined,
+        lastName: data.lastName ?? undefined,
+        telegramUsername: data.telegramUsername ? data.telegramUsername.replace('@', '') : undefined,
+      },
+    })
+    return { user: this.sanitize(user) }
+  }
+
   sanitize(user: any) {
     const { passwordHash, ...rest } = user
     return rest
