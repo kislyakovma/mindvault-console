@@ -11,9 +11,25 @@ const TABS = [
   { id: 'vpn', label: '🔒 VPN' },
 ]
 
+interface BriefInfo {
+  id: string
+  title: string
+  status: string
+  botName: string | null
+  botStatus: string
+  updatedAt: string
+}
+
 interface SystemStatus {
   hasBrief: boolean
-  briefUpdatedAt: string | null
+  briefs: BriefInfo[]
+}
+
+const BOT_STATUS: Record<string, { label: string; color: string }> = {
+  pending: { label: 'Ожидает запуска', color: '#6b6b8a' },
+  provisioning: { label: 'Запускается...', color: '#faad14' },
+  active: { label: 'Работает', color: '#52c41a' },
+  error: { label: 'Ошибка', color: '#ff4d4f' },
 }
 
 function StatusItem({ ok, label, sub, href }: { ok: boolean; label: string; sub?: string; href?: string }) {
@@ -34,7 +50,7 @@ function StatusItem({ ok, label, sub, href }: { ok: boolean; label: string; sub?
 
 export default function DashboardPage() {
   const [tab, setTab] = useState('status')
-  const [sysStatus, setSysStatus] = useState<SystemStatus>({ hasBrief: false, briefUpdatedAt: null })
+  const [sysStatus, setSysStatus] = useState<SystemStatus>({ hasBrief: false, briefs: [] })
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
 
@@ -47,7 +63,7 @@ export default function DashboardPage() {
     ]).then(([briefStatus, me]) => {
       setSysStatus({
         hasBrief: briefStatus?.hasBrief || false,
-        briefUpdatedAt: briefStatus?.briefUpdatedAt || null,
+        briefs: briefStatus?.briefs || [],
       })
       setUser(me?.user || null)
     }).finally(() => setLoading(false))
@@ -101,22 +117,30 @@ export default function DashboardPage() {
                   sub={user?.telegramUsername ? `@${user.telegramUsername}` : 'Укажите username для связи с ботом'}
                   href="/app/account"
                 />
-                <StatusItem
-                  ok={false}
-                  label="Ассистент"
-                  sub="Будет запущен после заполнения брифа"
-                />
+                {sysStatus.briefs.length === 0 ? (
+                  <StatusItem ok={false} label="Ассистент" sub="Будет запущен после заполнения брифа" href="/app/brief" />
+                ) : sysStatus.briefs.map(b => {
+                  const st = BOT_STATUS[b.botStatus] || BOT_STATUS.pending
+                  return (
+                    <StatusItem
+                      key={b.id}
+                      ok={b.botStatus === 'active'}
+                      label={`Бот для «${b.title}»`}
+                      sub={`${b.botName ? `${b.botName}: ` : ''}${st.label}`}
+                    />
+                  )
+                })}
               </div>
             )}
           </div>
 
-          {!sysStatus.hasBrief && !loading && (
+          {!loading && !sysStatus.hasBrief && (
             <div className={styles.cta}>
               <div className={styles.ctaText}>
                 <div className={styles.ctaTitle}>Заполните бриф</div>
                 <div className={styles.ctaSub}>Это займёт 5 минут. Бот узнает кто вы, чем занимаетесь и как с вами общаться.</div>
               </div>
-              <Link href="/app/brief" className={styles.ctaBtn}>Заполнить бриф →</Link>
+              <Link href="/app/brief" className={styles.ctaBtn}>Создать первый бриф →</Link>
             </div>
           )}
         </div>

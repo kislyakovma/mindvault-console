@@ -19,7 +19,7 @@ model User {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   sessions          Session[]
-  brief             Brief?
+  briefs            Brief[]
   subscription      Subscription?
   payments          Payment[]
   provisioningJob   ProvisioningJob?
@@ -46,9 +46,13 @@ model Session {
 
 model Brief {
   id        String      @id @default(uuid())
-  userId    String      @unique @map("user_id")
+  userId    String      @map("user_id")
+  title     String      @default("Мой бриф")
   dataJson  Json        @map("data_json")
   status    BriefStatus @default(DRAFT)
+  botName   String?     @map("bot_name")
+  botStatus String      @default("pending") @map("bot_status")
+  createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

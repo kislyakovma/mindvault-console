@@ -1,5 +1,36 @@
 .page { max-width: 720px; }
 
+.editorHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.backLink {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.backLink:hover { color: var(--text); }
+.titleInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 6px 0;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 200px;
+}
+.titleInput:focus { border-color: var(--lime); }
+
 .title {
   font-family: var(--font-display);
   font-weight: 700;
