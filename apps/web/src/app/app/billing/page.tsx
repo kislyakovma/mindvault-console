@@ -46,7 +46,7 @@ function Rub({ kopecks, sign = false }: { kopecks: number; sign?: boolean }) {
   const prefix = sign && kopecks > 0 ? '+' : ''
   const isPositive = kopecks >= 0
   return (
-    <>{prefix}{(Math.abs(kopecks) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub" style={{ color: 'inherit' }}>руб.</span></>
+    <>{prefix}{(Math.abs(kopecks) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub" style={{ color: 'inherit' }}>₽</span></>
   )
 }
 
@@ -94,7 +94,7 @@ export default function BillingPage() {
       {/* Баланс */}
       <div className={styles.balanceCard}>
         <div className={styles.balanceLabel}>Текущий баланс</div>
-        <div className={styles.balanceAmount}>{(( balance ?? 0) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub">руб.</span></div>
+        <div className={styles.balanceAmount}>{(( balance ?? 0) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub">₽</span></div>
         <div className={styles.balanceSub}>Пополнение через платёжные инструменты — скоро</div>
         <button className={styles.topupBtn} disabled>Пополнить баланс</button>
       </div>
@@ -120,7 +120,7 @@ export default function BillingPage() {
                     </div>
                   </div>
                   <div className={styles.subRight}>
-                    <span className={styles.subPrice}>{(s.priceKopecks / 100).toLocaleString('ru')}{' '}<span className="rub">руб.</span>/мес</span>
+                    <span className={styles.subPrice}>{(s.priceKopecks / 100).toLocaleString('ru')}{' '}<span className="rub">₽</span>/мес</span>
                     {s.status === 'ACTIVE' && (
                       <button
                         className={styles.cancelBtn}
@@ -155,7 +155,7 @@ export default function BillingPage() {
                   <div className={styles.txDate}>{new Date(tx.createdAt).toLocaleString('ru')}</div>
                 </div>
                 <span className={styles.txAmount} style={{ color: TX_COLORS[tx.type] || 'var(--text)' }}>
-                  {tx.amountKopecks >= 0 ? '+' : ''}{(tx.amountKopecks / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub">руб.</span>
+                  {tx.amountKopecks >= 0 ? '+' : ''}{(tx.amountKopecks / 100).toLocaleString('ru', { minimumFractionDigits: 2 })}{' '}<span className="rub">₽</span>
                 </span>
               </div>
             ))}
