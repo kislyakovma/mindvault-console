@@ -142,7 +142,7 @@ export default function AdminUserPage() {
         <div className={styles.empty}>Загрузка...</div>
       ) : (
         <div className={styles.layout}>
-          {/* Список ассистентов */
+          {/* Список ассистентов */}
           <div className={styles.list}>
             {briefs.length === 0 && (
               <div className={styles.emptyState}>Ассистентов нет — создайте первого</div>
