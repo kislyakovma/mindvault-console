@@ -42,6 +42,11 @@ export class AdminController {
     return this.svc.listUserBriefs(req.user.id, id)
   }
 
+  @Post('users/:id/briefs')
+  createBrief(@Req() req: any, @Param('id') id: string, @Body() body: { title?: string }) {
+    return this.svc.createUserBrief(req.user.id, id, body.title || 'Бриф')
+  }
+
   @Get('briefs/:briefId')
   getBrief(@Req() req: any, @Param('briefId') briefId: string) {
     return this.svc.getUserBrief(req.user.id, briefId)

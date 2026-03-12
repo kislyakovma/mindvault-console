@@ -110,6 +110,16 @@ export class AdminService {
 
   // ─── Briefs ──────────────────────────────────────────────────────────────
 
+  async createUserBrief(adminId: string, userId: string, title: string) {
+    await this.assertAdmin(adminId)
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user) throw new NotFoundException('User not found')
+    return this.prisma.brief.create({
+      data: { userId, title: title || 'Бриф', dataJson: {}, status: 'DRAFT' },
+      select: { id: true, title: true, status: true, botName: true, botStatus: true, createdAt: true, updatedAt: true },
+    })
+  }
+
   async listUserBriefs(adminId: string, userId: string) {
     await this.assertAdmin(adminId)
     return this.prisma.brief.findMany({

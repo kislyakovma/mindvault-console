@@ -58,12 +58,32 @@ export default function AdminUserPage() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [showCreate, setShowCreate] = useState(false)
 
   useEffect(() => {
     apiJson(`/api/admin/users/${id}/briefs`)
       .then(data => { setBriefs(Array.isArray(data) ? data : []) })
       .finally(() => setLoading(false))
   }, [id])
+
+  async function createBrief(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newTitle.trim()) return
+    setCreating(true)
+    const data = await apiJson(`/api/admin/users/${id}/briefs`, {
+      method: 'POST',
+      body: JSON.stringify({ title: newTitle.trim() }),
+    })
+    setCreating(false)
+    if (data?.id) {
+      setBriefs(prev => [data, ...prev])
+      setShowCreate(false)
+      setNewTitle('')
+      openBrief(data.id)
+    }
+  }
 
   async function openBrief(briefId: string) {
     const data = await apiJson(`/api/admin/briefs/${briefId}`)
@@ -97,12 +117,34 @@ export default function AdminUserPage() {
   return (
     <div className={styles.page}>
       <Link href="/app/admin" className={styles.back}>← Пользователи</Link>
-      <h1 className={styles.title}>Брифы пользователя</h1>
+      <div className={styles.titleRow}>
+        <h1 className={styles.title}>Брифы пользователя</h1>
+        <button className={styles.createBtn} onClick={() => setShowCreate(v => !v)}>+ Создать бриф</button>
+      </div>
+
+      {showCreate && (
+        <form className={styles.createForm} onSubmit={createBrief}>
+          <input
+            className={styles.createInput}
+            value={newTitle}
+            onChange={e => setNewTitle(e.target.value)}
+            placeholder="Название брифа..."
+            autoFocus
+          />
+          <button className={styles.createSubmit} type="submit" disabled={creating || !newTitle.trim()}>
+            {creating ? '...' : 'Создать'}
+          </button>
+          <button className={styles.cancelBtn} type="button" onClick={() => setShowCreate(false)}>Отмена</button>
+        </form>
+      )}
 
       {loading ? (
         <div className={styles.empty}>Загрузка...</div>
-      ) : briefs.length === 0 ? (
-        <div className={styles.empty}>Брифов нет</div>
+      ) : briefs.length === 0 && !showCreate ? (
+        <div className={styles.emptyState}>
+          <div>Брифов нет</div>
+          <button className={styles.createBtn} onClick={() => setShowCreate(true)}>+ Создать первый бриф</button>
+        </div>
       ) : (
         <div className={styles.layout}>
           {/* Список брифов */}
