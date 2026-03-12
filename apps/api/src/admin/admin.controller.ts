@@ -12,21 +12,21 @@ export class AdminController {
 
   @Get('users')
   listUsers(@Req() req: any) {
-    return this.svc.listUsers(req.user.sub)
+    return this.svc.listUsers(req.user.id)
   }
 
   @Post('users')
   createUser(@Req() req: any, @Body() body: { email: string; telegramUsername?: string }) {
-    return this.svc.createUser(req.user.sub, body.email, body.telegramUsername)
+    return this.svc.createUser(req.user.id, body.email, body.telegramUsername)
   }
 
   @Delete('users/:id')
   deleteUser(@Req() req: any, @Param('id') id: string) {
-    return this.svc.deleteUser(req.user.sub, id)
+    return this.svc.deleteUser(req.user.id, id)
   }
 
   @Post('users/:id/reset-password')
   resetPassword(@Req() req: any, @Param('id') id: string) {
-    return this.svc.resetPassword(req.user.sub, id)
+    return this.svc.resetPassword(req.user.id, id)
   }
 }

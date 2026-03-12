@@ -37,7 +37,7 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(204)
   async logout(@Req() req: any, @Res({ passthrough: true }) res: any) {
-    await this.auth.logout(req.user.sub)
+    await this.auth.logout(req.user.id)
     res.clearCookie('refresh_token')
   }
 
