@@ -44,7 +44,7 @@ const SUB_STATUS: Record<string, { label: string; color: string }> = {
 
 function formatRub(kopecks: number) {
   const sign = kopecks >= 0 ? '+' : ''
-  return `${sign}${(kopecks / 100).toLocaleString('ru', { minimumFractionDigits: 2 })} ₽`
+  return `${sign}${(kopecks / 100).toLocaleString('ru', { minimumFractionDigits: 2 })} руб.`
 }
 
 export default function BillingPage() {
@@ -91,7 +91,7 @@ export default function BillingPage() {
       {/* Баланс */}
       <div className={styles.balanceCard}>
         <div className={styles.balanceLabel}>Текущий баланс</div>
-        <div className={styles.balanceAmount}>{(( balance ?? 0) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })} ₽</div>
+        <div className={styles.balanceAmount}>{(( balance ?? 0) / 100).toLocaleString('ru', { minimumFractionDigits: 2 })} руб.</div>
         <div className={styles.balanceSub}>Пополнение через платёжные инструменты — скоро</div>
         <button className={styles.topupBtn} disabled>Пополнить баланс</button>
       </div>
@@ -117,7 +117,7 @@ export default function BillingPage() {
                     </div>
                   </div>
                   <div className={styles.subRight}>
-                    <span className={styles.subPrice}>{(s.priceKopecks / 100).toLocaleString('ru')} ₽/мес</span>
+                    <span className={styles.subPrice}>{(s.priceKopecks / 100).toLocaleString('ru')} руб./мес</span>
                     {s.status === 'ACTIVE' && (
                       <button
                         className={styles.cancelBtn}
