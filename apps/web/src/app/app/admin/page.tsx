@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { SkeletonRow } from '@/components/Skeleton'
 import styles from './admin.module.css'
@@ -35,6 +35,8 @@ export default function AdminPage() {
   const token = () => typeof window !== 'undefined' ? localStorage.getItem('access_token') || '' : ''
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` })
 
+  const mountedRef = useRef(false)
+
   const load = useCallback(async (q?: string) => {
     setLoading(true)
     try {
@@ -44,8 +46,9 @@ export default function AdminPage() {
       const data = await res.json()
       setUsers(Array.isArray(data) ? data : [])
     } finally { setLoading(false) }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Начальная загрузка — один раз
   useEffect(() => {
     const token = localStorage.getItem('access_token')
     if (!token) return
@@ -54,13 +57,14 @@ export default function AdminPage() {
       .then(d => { if (d?.user?.role === 'SUPERADMIN') setIsSuperAdmin(true) })
       .catch(() => {})
     load()
-  }, [load])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // debounce search
+  // Debounce search — только после первого рендера
   useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return }
     const t = setTimeout(() => load(search || undefined), 300)
     return () => clearTimeout(t)
-  }, [search, load])
+  }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function create(e: React.FormEvent) {
     e.preventDefault()
