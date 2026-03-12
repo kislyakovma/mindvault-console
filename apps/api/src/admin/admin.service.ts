@@ -19,16 +19,41 @@ export class AdminService {
 
   async assertAdmin(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
-    if (!user || user.role !== 'ADMIN') throw new ForbiddenException('Admin only')
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN')) throw new ForbiddenException('Admin only')
     return user
   }
 
-  async listUsers(adminId: string) {
+  async assertSuperAdmin(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user || user.role !== 'SUPERADMIN') throw new ForbiddenException('Superadmin only')
+    return user
+  }
+
+  async listUsers(adminId: string, search?: string) {
     await this.assertAdmin(adminId)
+    const where = search ? {
+      OR: [
+        { email: { contains: search, mode: 'insensitive' as const } },
+        { firstName: { contains: search, mode: 'insensitive' as const } },
+        { lastName: { contains: search, mode: 'insensitive' as const } },
+        { telegramUsername: { contains: search, mode: 'insensitive' as const } },
+      ],
+    } : {}
     return this.prisma.user.findMany({
+      where,
       select: { id: true, email: true, role: true, firstName: true, lastName: true, telegramUsername: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     })
+  }
+
+  async setRole(superAdminId: string, userId: string, role: 'USER' | 'ADMIN') {
+    await this.assertSuperAdmin(superAdminId)
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: { id: true, email: true, role: true },
+    })
+    return user
   }
 
   async createUser(

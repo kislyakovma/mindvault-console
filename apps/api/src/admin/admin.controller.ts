@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Req, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Delete, Patch, Body, Param, Req, UseGuards, Query } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { AdminService } from './admin.service'
 import { JwtAuthGuard } from '../auth/jwt.guard'
@@ -11,8 +11,13 @@ export class AdminController {
   constructor(private svc: AdminService) {}
 
   @Get('users')
-  listUsers(@Req() req: any) {
-    return this.svc.listUsers(req.user.id)
+  listUsers(@Req() req: any, @Query('search') search?: string) {
+    return this.svc.listUsers(req.user.id, search)
+  }
+
+  @Patch('users/:id/role')
+  setRole(@Req() req: any, @Param('id') id: string, @Body() body: { role: 'USER' | 'ADMIN' }) {
+    return this.svc.setRole(req.user.id, id, body.role)
   }
 
   @Post('users')

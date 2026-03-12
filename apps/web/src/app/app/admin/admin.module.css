@@ -15,13 +15,35 @@
   margin-bottom: 20px;
 }
 
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
 .cardTitle {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
-  margin-bottom: 16px;
 }
+
+.search {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 220px;
+}
+.search:focus { border-color: var(--lime); }
+@media (max-width: 480px) { .search { width: 100%; } }
 
 .form { display: flex; flex-direction: column; gap: 10px; }
 .row { display: flex; gap: 10px; }
@@ -83,7 +105,7 @@
 
 .table { display: flex; flex-direction: column; gap: 8px; }
 
-.row {
+.row2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -94,8 +116,10 @@
 }
 
 .userInfo { flex: 1; min-width: 0; }
-.userEmail { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.userMeta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.userName { font-size: 14px; font-weight: 500; }
+.userEmail { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.userMeta { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.tg { font-size: 11px; color: #4da6ff; }
 
 .badge {
   font-size: 10px;
@@ -107,6 +131,7 @@
   color: var(--muted);
 }
 .badgeAdmin { background: rgba(198,241,53,0.15); color: var(--lime); }
+.badgeSuperAdmin { background: rgba(250,173,20,0.15); color: #faad14; }
 
 .date { font-size: 11px; color: var(--muted); }
 

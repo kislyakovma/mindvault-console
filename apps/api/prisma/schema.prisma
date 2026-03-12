@@ -162,6 +162,7 @@ model AuditLog {
 enum Role {
   USER
   ADMIN
+  SUPERADMIN
 }
 
 enum BriefStatus {
