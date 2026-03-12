@@ -48,12 +48,11 @@ export class AdminService {
 
   async setRole(superAdminId: string, userId: string, role: 'USER' | 'ADMIN') {
     await this.assertSuperAdmin(superAdminId)
-    const user = await this.prisma.user.update({
+    return this.prisma.user.update({
       where: { id: userId },
       data: { role },
       select: { id: true, email: true, role: true },
     })
-    return user
   }
 
   async createUser(
@@ -64,9 +63,7 @@ export class AdminService {
     lastName?: string,
   ) {
     await this.assertAdmin(adminId)
-
     if (!telegramUsername) throw new BadRequestException('Telegram username is required')
-
     const exists = await this.prisma.user.findUnique({ where: { email } })
     if (exists) throw new BadRequestException('Email already exists')
 
@@ -75,14 +72,7 @@ export class AdminService {
     const tg = telegramUsername.replace('@', '')
 
     const user = await this.prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        role: 'USER',
-        firstName: firstName || null,
-        lastName: lastName || null,
-        telegramUsername: tg,
-      },
+      data: { email, passwordHash, role: 'USER', firstName: firstName || null, lastName: lastName || null, telegramUsername: tg },
     })
 
     const sent = await this.sendCredentialsToUser(tg, email, password, firstName)
@@ -118,7 +108,6 @@ export class AdminService {
     return { password, sentToUser: !!user.telegramUsername }
   }
 
-  // Отправка через бота напрямую пользователю по username
   private async sendCredentialsToUser(
     telegramUsername: string,
     email: string,
@@ -127,7 +116,7 @@ export class AdminService {
   ): Promise<boolean> {
     if (!this.bot) return false
 
-    const name = firstName ? firstName : 'Привет'
+    const name = firstName || 'Привет'
     const text =
       `${name}! 👋\n\n` +
       `Ваш аккаунт MindVault создан.\n\n` +
@@ -137,19 +126,13 @@ export class AdminService {
       `_Сохраните пароль — повторно он не отправляется._`
 
     try {
-      // Telegram не позволяет отправить по username без chat_id
-      // Используем getUpdates чтобы найти chat_id по username
-      const updates = await this.bot.telegram.getUpdates(0, 100, undefined, ['message'])
       const tgLower = telegramUsername.toLowerCase().replace('@', '')
-
-      const match = updates.find(u => {
-        const msg = (u as any).message
-        return msg?.from?.username?.toLowerCase() === tgLower
-      })
-
-      const chatId = (match as any)?.message?.chat?.id
-      if (chatId) {
-        await this.bot.telegram.sendMessage(chatId, text, { parse_mode: 'Markdown' })
+      // Запрашиваем chat_id у webhook-сервера (знает всех кто писал боту)
+      const webhookBase = this.cfg.get<string>('WEBHOOK_URL') || 'http://172.17.0.1:5679'
+      const res = await fetch(`${webhookBase}/chatid?username=${tgLower}`)
+      if (res.ok) {
+        const data = await res.json() as { chat_id: string }
+        await this.bot.telegram.sendMessage(data.chat_id, text, { parse_mode: 'Markdown' })
         return true
       }
     } catch (e) {
@@ -161,7 +144,7 @@ export class AdminService {
     if (adminChatId) {
       await this.bot.telegram.sendMessage(
         adminChatId,
-        `⚠️ Не удалось отправить напрямую @${telegramUsername} (пользователь не писал боту).\n\n` +
+        `⚠️ Не удалось найти @${telegramUsername} в базе бота (пользователь не писал боту).\n\n` +
         `Передайте вручную:\n📧 \`${email}\`\n🔑 \`${password}\``,
         { parse_mode: 'Markdown' }
       ).catch(() => {})
