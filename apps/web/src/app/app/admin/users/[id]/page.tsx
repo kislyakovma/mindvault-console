@@ -140,14 +140,13 @@ export default function AdminUserPage() {
 
       {loading ? (
         <div className={styles.empty}>Загрузка...</div>
-      ) : briefs.length === 0 && !showCreate ? (
-        <div className={styles.emptyState}>
-          <div>Брифов нет — нажмите «+ Создать бриф» выше</div>
-        </div>
       ) : (
         <div className={styles.layout}>
           {/* Список брифов */}
           <div className={styles.list}>
+            {briefs.length === 0 && (
+              <div className={styles.emptyState}>Брифов нет — создайте первый</div>
+            )}
             {briefs.map(b => (
               <div
                 key={b.id}
