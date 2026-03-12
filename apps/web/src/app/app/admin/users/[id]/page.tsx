@@ -142,8 +142,7 @@ export default function AdminUserPage() {
         <div className={styles.empty}>Загрузка...</div>
       ) : briefs.length === 0 && !showCreate ? (
         <div className={styles.emptyState}>
-          <div>Брифов нет</div>
-          <button className={styles.createBtn} onClick={() => setShowCreate(true)}>+ Создать первый бриф</button>
+          <div>Брифов нет — нажмите «+ Создать бриф» выше</div>
         </div>
       ) : (
         <div className={styles.layout}>
