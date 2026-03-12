@@ -142,12 +142,14 @@ export class AdminService {
       const updates = await this.bot.telegram.getUpdates(0, 100, undefined, ['message'])
       const tgLower = telegramUsername.toLowerCase().replace('@', '')
 
-      const match = updates.find(u =>
-        u.message?.from?.username?.toLowerCase() === tgLower
-      )
+      const match = updates.find(u => {
+        const msg = (u as any).message
+        return msg?.from?.username?.toLowerCase() === tgLower
+      })
 
-      if (match?.message?.chat?.id) {
-        await this.bot.telegram.sendMessage(match.message.chat.id, text, { parse_mode: 'Markdown' })
+      const chatId = (match as any)?.message?.chat?.id
+      if (chatId) {
+        await this.bot.telegram.sendMessage(chatId, text, { parse_mode: 'Markdown' })
         return true
       }
     } catch (e) {
