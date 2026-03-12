@@ -1,3 +1,5 @@
+.welcomeRow { margin-bottom: 8px; }
+
 .title {
   font-family: var(--font-display);
   font-weight: 700;
@@ -27,3 +29,101 @@
 }
 .tab:hover { color: var(--text); }
 .tabActive { color: var(--lime); border-bottom-color: var(--lime); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  max-width: 640px;
+}
+
+.cardTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.loading { color: var(--muted); font-size: 13px; }
+
+/* Status list */
+.statusList { display: flex; flex-direction: column; gap: 4px; }
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+.statusItem:hover { background: var(--surface2); }
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dotOk { background: #52c41a; box-shadow: 0 0 6px rgba(82,196,26,0.5); }
+.dotWarn { background: rgba(255,255,255,0.2); }
+
+.statusInfo { flex: 1; min-width: 0; }
+.statusLabel { font-size: 14px; font-weight: 500; }
+.statusSub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.statusAction {
+  font-size: 12px;
+  color: var(--lime);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.statusAction:hover { text-decoration: underline; }
+
+.statusBadge {
+  font-size: 12px;
+  color: #52c41a;
+  flex-shrink: 0;
+}
+
+/* CTA block */
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(198,241,53,0.06);
+  border: 1px solid rgba(198,241,53,0.2);
+  border-radius: 12px;
+  padding: 20px 24px;
+  max-width: 640px;
+}
+.ctaTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.ctaSub { font-size: 13px; color: var(--muted); }
+.ctaBtn {
+  background: var(--lime);
+  color: #0a0a0f;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 24px;
+  border-radius: var(--radius);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+.ctaBtn:hover { transform: translateY(-1px); box-shadow: 0 0 16px var(--lime-glow); }
+
+@media (max-width: 480px) {
+  .cta { flex-direction: column; align-items: flex-start; }
+}

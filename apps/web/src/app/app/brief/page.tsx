@@ -36,11 +36,34 @@ export default function BriefPage() {
   const token = () => localStorage.getItem('access_token') || ''
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` })
 
-  // Подтянуть TG из аккаунта
+  // Загружаем сохранённый бриф + TG из аккаунта
   useEffect(() => {
-    fetch(`${API}/api/auth/me`, { headers: headers() })
-      .then(r => r.json())
-      .then(d => { if (d?.user?.telegramUsername) setTg(d.user.telegramUsername) })
+    const t = token()
+    const h = { Authorization: `Bearer ${t}` }
+
+    Promise.all([
+      fetch(`${API}/api/brief`, { headers: h }).then(r => r.json()),
+      fetch(`${API}/api/auth/me`, { headers: h }).then(r => r.json()),
+    ]).then(([brief, me]) => {
+      if (brief && !brief.error) {
+        if (brief.botName) setBotName(brief.botName)
+        if (brief.role) setRole(brief.role)
+        if (brief.goals) setGoals(brief.goals)
+        if (brief.projects?.length) setProjects(brief.projects)
+        if (brief.timezone) setTimezone(brief.timezone)
+        if (brief.workTime) setWorkTime(brief.workTime)
+        if (brief.commStyle) setCommStyle(brief.commStyle)
+        if (brief.language) setLanguage(brief.language)
+        if (brief.interests) setInterests(brief.interests)
+        if (brief.avoid) setAvoid(brief.avoid)
+        if (brief.values) setValues(brief.values)
+        if (brief.decisions) setDecisions(brief.decisions)
+        if (brief.lifeContext) setLifeContext(brief.lifeContext)
+      }
+      // TG из аккаунта если не в брифе
+      if (brief?.telegramUsername) setTg(brief.telegramUsername)
+      else if (me?.user?.telegramUsername) setTg(me.user.telegramUsername)
+    })
   }, [])
 
   const addProject = () => {
