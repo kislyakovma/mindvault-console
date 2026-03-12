@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Montserrat:wght@400;500;600&display=swap');
 
 :root {
   --bg: #0a0a0f;
@@ -13,7 +13,7 @@
   --green: #52c41a;
   --yellow: #faad14;
   --font-display: 'Syne', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-body: 'Montserrat', sans-serif;
   --radius: 8px;
 }
 
@@ -29,5 +29,5 @@ input, textarea, select { font-family: inherit; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* Кириллица «руб.» — всегда Inter, не Syne */
-.rub { font-family: 'Inter', sans-serif; }
+/* Кириллица «руб.» — Montserrat (не Syne) */
+.rub { font-family: 'Montserrat', sans-serif; }
