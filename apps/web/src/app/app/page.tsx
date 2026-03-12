@@ -102,16 +102,16 @@ export default function DashboardPage() {
                 />
                 <StatusItem
                   ok={sysStatus.hasBrief}
-                  label="Боты"
+                  label="Ассистенты"
                   sub={sysStatus.hasBrief
-                    ? `Настроено ботов: ${sysStatus.briefs.filter(b => b.status === 'SUBMITTED').length}`
-                    : 'Создайте бота и заполните настройки'}
+                    ? `Настроено ассистентов: ${sysStatus.briefs.filter(b => b.status === 'SUBMITTED').length}`
+                    : 'Создайте ассистента и заполните настройки'}
                   href="/app/brief"
                 />
                 <StatusItem
                   ok={!!user?.telegramUsername}
                   label="Telegram"
-                  sub={user?.telegramUsername ? `@${user.telegramUsername}` : 'Укажите username для связи с ботом'}
+                  sub={user?.telegramUsername ? `@${user.telegramUsername}` : 'Укажите username для связи с ассистентом'}
                   href="/app/account"
                 />
                 {sysStatus.briefs.length === 0 ? (
@@ -122,7 +122,7 @@ export default function DashboardPage() {
                     <StatusItem
                       key={b.id}
                       ok={b.botStatus === 'active'}
-                      label={`Бот для «${b.title}»`}
+                      label={`Ассистент «${b.title}»`}
                       sub={`${b.botName ? `${b.botName}: ` : ''}${st.label}`}
                     />
                   )
@@ -134,10 +134,10 @@ export default function DashboardPage() {
           {!loading && !sysStatus.hasBrief && (
             <div className={styles.cta}>
               <div className={styles.ctaText}>
-                <div className={styles.ctaTitle}>Создайте бота</div>
-                <div className={styles.ctaSub}>Это займёт 5 минут. Бот узнает кто вы, чем занимаетесь и как с вами общаться.</div>
+                <div className={styles.ctaTitle}>Создайте ассистента</div>
+                <div className={styles.ctaSub}>Это займёт 5 минут. Ассистент узнает кто вы, чем занимаетесь и как с вами общаться.</div>
               </div>
-              <Link href="/app/brief" className={styles.ctaBtn}>Создать бота →</Link>
+              <Link href="/app/brief" className={styles.ctaBtn}>Создать ассистента →</Link>
             </div>
           )}
         </div>

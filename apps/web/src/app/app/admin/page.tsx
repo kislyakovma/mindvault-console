@@ -188,7 +188,7 @@ export default function AdminPage() {
                       {u.role === 'ADMIN' ? '👤' : '🛡'}
                     </button>
                   )}
-                  <button className={styles.actionBtn} onClick={() => router.push(`/app/admin/users/${u.id}`)} title="Боты">📋</button>
+                  <button className={styles.actionBtn} onClick={() => router.push(`/app/admin/users/${u.id}`)} title="Ассистенты">📋</button>
                   <button className={styles.actionBtn} onClick={() => resetPassword(u.id)} title="Сбросить пароль">🔑</button>
                   <button className={`${styles.actionBtn} ${styles.danger}`} onClick={() => deleteUser(u.id, u.email)} title="Удалить">🗑</button>
                 </div>

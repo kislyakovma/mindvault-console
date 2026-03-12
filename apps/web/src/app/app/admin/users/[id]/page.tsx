@@ -118,8 +118,8 @@ export default function AdminUserPage() {
     <div className={styles.page}>
       <Link href="/app/admin" className={styles.back}>← Пользователи</Link>
       <div className={styles.titleRow}>
-        <h1 className={styles.title}>Боты пользователя</h1>
-        <button className={styles.createBtn} onClick={() => setShowCreate(v => !v)}>+ Создать бота</button>
+        <h1 className={styles.title}>Ассистенты пользователя</h1>
+        <button className={styles.createBtn} onClick={() => setShowCreate(v => !v)}>+ Создать ассистента</button>
       </div>
 
       {showCreate && (
@@ -128,7 +128,7 @@ export default function AdminUserPage() {
             className={styles.createInput}
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
-            placeholder="Название бота..."
+            placeholder="Название ассистента..."
             autoFocus
           />
           <button className={styles.createSubmit} type="submit" disabled={creating || !newTitle.trim()}>
@@ -142,10 +142,10 @@ export default function AdminUserPage() {
         <div className={styles.empty}>Загрузка...</div>
       ) : (
         <div className={styles.layout}>
-          {/* Список ботов */
+          {/* Список ассистентов */
           <div className={styles.list}>
             {briefs.length === 0 && (
-              <div className={styles.emptyState}>Ботов нет — создайте первого</div>
+              <div className={styles.emptyState}>Ассистентов нет — создайте первого</div>
             )}
             {briefs.map(b => (
               <div

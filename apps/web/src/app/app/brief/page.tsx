@@ -52,7 +52,7 @@ export default function BriefListPage() {
   }
 
   async function deleteBrief(id: string, title: string) {
-    if (!confirm(`Удалить бота "${title}"?`)) return
+    if (!confirm(`Удалить ассистента "${title}"?`)) return
     await apiFetch(`/api/brief/${id}`, { method: 'DELETE' })
     load()
   }
@@ -60,8 +60,8 @@ export default function BriefListPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Боты</h1>
-        <button className={styles.newBtn} onClick={() => setShowForm(true)}>+ Новый бот</button>
+        <h1 className={styles.title}>Ассистенты</h1>
+        <button className={styles.newBtn} onClick={() => setShowForm(true)}>+ Новый ассистент</button>
       </div>
       <p className={styles.sub}>Каждый бот — отдельный ассистент. Создайте для себя, коллеги или члена семьи.</p>
 
@@ -88,9 +88,9 @@ export default function BriefListPage() {
       ) : briefs.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>📋</div>
-          <div className={styles.emptyTitle}>Ботов пока нет</div>
+          <div className={styles.emptyTitle}>Ассистентов пока нет</div>
           <div className={styles.emptySub}>Создайте первый, чтобы настроить ассистента</div>
-          <button className={styles.newBtn} onClick={() => setShowForm(true)}>+ Создать бота</button>
+          <button className={styles.newBtn} onClick={() => setShowForm(true)}>+ Создать ассистента</button>
         </div>
       ) : (
         <div className={styles.grid}>

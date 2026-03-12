@@ -13,7 +13,7 @@ export default function BriefEditorPage() {
   const router = useRouter()
   const id = params?.id as string
 
-  const [briefTitle, setBriefTitle] = useState('Мой бот')
+  const [briefTitle, setBriefTitle] = useState('Мой ассистент')
   const [botName, setBotName] = useState('')
   const [tg, setTg] = useState('')
   const [role, setRole] = useState('')
@@ -74,12 +74,12 @@ export default function BriefEditorPage() {
   return (
     <div className={styles.page}>
       <div className={styles.editorHeader}>
-        <Link href="/app/brief" className={styles.backLink}>← Все боты</Link>
+        <Link href="/app/brief" className={styles.backLink}>← Все ассистенты</Link>
         <input
           className={styles.titleInput}
           value={briefTitle}
           onChange={e => setBriefTitle(e.target.value)}
-          placeholder="Название бота"
+          placeholder="Название ассистента"
         />
       </div>
 
@@ -108,7 +108,7 @@ export default function BriefEditorPage() {
           <div className={styles.blockNum}>02</div>
           <div>
             <div className={styles.blockTitle}>Работа и проекты</div>
-            <div className={styles.blockHint}>Бот будет помнить ваши проекты и оперировать вашими задачами.</div>
+            <div className={styles.blockHint}>Ассистент будет помнить ваши проекты и оперировать вашими задачами.</div>
           </div>
         </div>
         <div className={styles.section}>
@@ -136,7 +136,7 @@ export default function BriefEditorPage() {
           <div className={styles.blockNum}>03</div>
           <div>
             <div className={styles.blockTitle}>Стиль общения</div>
-            <div className={styles.blockHint}>Бот адаптирует тон, объём ответов и время активности под вас.</div>
+            <div className={styles.blockHint}>Ассистент адаптирует тон, объём ответов и время активности под вас.</div>
           </div>
         </div>
         <div className={styles.twoCol}>
