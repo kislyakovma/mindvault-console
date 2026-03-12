@@ -2,9 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { apiFetch, apiJson } from '@/lib/api'
 import styles from '../brief.module.css'
-
-const API = process.env.NEXT_PUBLIC_API_URL || ''
 const WORK_STYLES = ['Утром', 'Днём', 'Вечером', 'Ночью', 'В любое время']
 const COMM_STYLES = ['Коротко и по делу', 'С деталями и объяснениями', 'Дружелюбно и неформально', 'Строго и профессионально']
 const TIMEZONES = ['UTC+2 (Калининград)', 'UTC+3 (Москва)', 'UTC+4 (Самара)', 'UTC+5 (Екатеринбург)', 'UTC+6 (Новосибирск)', 'UTC+7 (Красноярск)', 'UTC+8 (Иркутск)', 'UTC+9 (Якутск)', 'UTC+10 (Владивосток)', 'Другой']
@@ -32,14 +31,11 @@ export default function BriefEditorPage() {
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  const token = () => localStorage.getItem('access_token') || ''
-  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` })
-
   useEffect(() => {
     if (!id) return
     Promise.all([
-      fetch(`${API}/api/brief/${id}`, { headers: headers() }).then(r => r.json()),
-      fetch(`${API}/api/auth/me`, { headers: headers() }).then(r => r.json()),
+      apiJson(`/api/brief/${id}`),
+      apiJson('/api/auth/me'),
     ]).then(([brief, me]) => {
       if (brief?.title) setBriefTitle(brief.title)
       if (brief?.botName) setBotName(brief.botName)
@@ -66,8 +62,8 @@ export default function BriefEditorPage() {
   }
 
   async function handleSave() {
-    await fetch(`${API}/api/brief/${id}`, {
-      method: 'PUT', headers: headers(),
+    await apiFetch(`/api/brief/${id}`, {
+      method: 'PUT',
       body: JSON.stringify({ title: briefTitle, botName, role, goals, projects, language, telegramUsername: tg || null, timezone, workTime, commStyle, interests, avoid, values, decisions, lifeContext }),
     })
     setSaved(true); setTimeout(() => setSaved(false), 2500)

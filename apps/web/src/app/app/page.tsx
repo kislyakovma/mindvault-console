@@ -2,9 +2,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import VpnTab from '@/components/VpnTab'
+import { apiJson } from '@/lib/api'
 import styles from './dashboard.module.css'
-
-const API = process.env.NEXT_PUBLIC_API_URL || ''
 
 const TABS = [
   { id: 'status', label: '⚡ Статус' },
@@ -55,11 +54,9 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const t = localStorage.getItem('access_token') || ''
-    const h = { Authorization: `Bearer ${t}` }
     Promise.all([
-      fetch(`${API}/api/brief/status`, { headers: h }).then(r => r.json()),
-      fetch(`${API}/api/auth/me`, { headers: h }).then(r => r.json()),
+      apiJson('/api/brief/status'),
+      apiJson('/api/auth/me'),
     ]).then(([briefStatus, me]) => {
       setSysStatus({
         hasBrief: briefStatus?.hasBrief || false,

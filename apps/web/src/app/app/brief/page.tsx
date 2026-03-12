@@ -1,9 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiFetch, apiJson } from '@/lib/api'
 import styles from './briefs.module.css'
-
-const API = process.env.NEXT_PUBLIC_API_URL || ''
 
 interface Brief {
   id: string
@@ -29,13 +28,9 @@ export default function BriefListPage() {
   const [showForm, setShowForm] = useState(false)
   const router = useRouter()
 
-  const token = () => localStorage.getItem('access_token') || ''
-  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` })
-
   const load = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`${API}/api/brief`, { headers: headers() })
-    const data = await res.json()
+    const data = await apiJson('/api/brief')
     setBriefs(Array.isArray(data) ? data : [])
     setLoading(false)
   }, [])
@@ -46,11 +41,10 @@ export default function BriefListPage() {
     e.preventDefault()
     if (!newTitle.trim()) return
     setCreating(true)
-    const res = await fetch(`${API}/api/brief`, {
-      method: 'POST', headers: headers(),
+    const data = await apiJson('/api/brief', {
+      method: 'POST',
       body: JSON.stringify({ title: newTitle.trim() }),
     })
-    const data = await res.json()
     setCreating(false)
     setShowForm(false)
     setNewTitle('')
@@ -59,7 +53,7 @@ export default function BriefListPage() {
 
   async function deleteBrief(id: string, title: string) {
     if (!confirm(`Удалить бриф "${title}"?`)) return
-    await fetch(`${API}/api/brief/${id}`, { method: 'DELETE', headers: headers() })
+    await apiFetch(`/api/brief/${id}`, { method: 'DELETE' })
     load()
   }
 
