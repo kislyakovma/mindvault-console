@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, BadRequestException } from '@nestjs/common'
+import { Injectable, ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { ConfigService } from '@nestjs/config'
 import * as bcrypt from 'bcrypt'
@@ -106,6 +106,37 @@ export class AdminService {
     }
 
     return { password, sentToUser: !!user.telegramUsername }
+  }
+
+  // ─── Briefs ──────────────────────────────────────────────────────────────
+
+  async listUserBriefs(adminId: string, userId: string) {
+    await this.assertAdmin(adminId)
+    return this.prisma.brief.findMany({
+      where: { userId },
+      select: { id: true, title: true, status: true, botName: true, botStatus: true, createdAt: true, updatedAt: true },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  async getUserBrief(adminId: string, briefId: string) {
+    await this.assertAdmin(adminId)
+    const brief = await this.prisma.brief.findUnique({ where: { id: briefId }, include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } } })
+    if (!brief) throw new NotFoundException('Brief not found')
+    return { ...brief.dataJson as object, id: brief.id, title: brief.title, status: brief.status, botName: brief.botName, botStatus: brief.botStatus, updatedAt: brief.updatedAt, user: brief.user }
+  }
+
+  async updateUserBrief(adminId: string, briefId: string, data: import('@prisma/client').Prisma.InputJsonValue, title?: string) {
+    await this.assertAdmin(adminId)
+    const brief = await this.prisma.brief.findUnique({ where: { id: briefId } })
+    if (!brief) throw new NotFoundException('Brief not found')
+    const d = data as Record<string, unknown>
+    const filled = !!(d.botName || d.role || d.goals)
+    return this.prisma.brief.update({
+      where: { id: briefId },
+      data: { dataJson: data, status: filled ? 'SUBMITTED' : 'DRAFT', botName: (d.botName as string) || brief.botName || null, title: title || brief.title },
+      select: { id: true, title: true, status: true, botName: true, updatedAt: true },
+    })
   }
 
   private async sendCredentialsToUser(

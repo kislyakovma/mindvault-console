@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
 
 interface User {
@@ -15,6 +16,7 @@ interface User {
 const API = process.env.NEXT_PUBLIC_API_URL || ''
 
 export default function AdminPage() {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -186,6 +188,7 @@ export default function AdminPage() {
                       {u.role === 'ADMIN' ? '👤' : '🛡'}
                     </button>
                   )}
+                  <button className={styles.actionBtn} onClick={() => router.push(`/app/admin/users/${u.id}`)} title="Брифы">📋</button>
                   <button className={styles.actionBtn} onClick={() => resetPassword(u.id)} title="Сбросить пароль">🔑</button>
                   <button className={`${styles.actionBtn} ${styles.danger}`} onClick={() => deleteUser(u.id, u.email)} title="Удалить">🗑</button>
                 </div>
