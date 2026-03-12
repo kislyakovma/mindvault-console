@@ -28,7 +28,8 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${API}/api/admin/users`, { headers: headers() })
       if (res.status === 403) { window.location.href = '/app'; return }
-      setUsers(await res.json())
+      const data = await res.json()
+      setUsers(Array.isArray(data) ? data : [])
     } finally { setLoading(false) }
   }, [])
 
