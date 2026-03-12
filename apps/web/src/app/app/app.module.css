@@ -11,5 +11,5 @@
 
 @media (max-width: 768px) {
   .shell { flex-direction: column; }
-  .main { padding: 24px 16px; }
+  .main { padding: 20px 16px 90px; }
 }

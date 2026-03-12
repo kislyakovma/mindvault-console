@@ -35,7 +35,8 @@
 .link:hover { background: var(--surface2); color: var(--text); }
 .link.active { background: var(--surface2); color: var(--lime); }
 
-.icon { font-size: 16px; }
+.icon { font-size: 16px; line-height: 1; }
+.label {}
 
 .bottom { padding: 8px; }
 .logout {
@@ -50,9 +51,49 @@
 }
 .logout:hover { color: var(--red); border-color: var(--red); }
 
+/* ── Mobile: bottom tab bar ── */
 @media (max-width: 768px) {
-  .sidebar { width: 100%; min-height: auto; flex-direction: row; padding: 12px 16px; align-items: center; }
-  .nav { flex-direction: row; flex: 1; justify-content: center; gap: 8px; }
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    min-height: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    padding: 8px 4px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 100;
+  }
+
+  .logo { display: none; }
   .bottom { display: none; }
-  .logo { margin-bottom: 0; margin-right: 16px; }
+
+  .nav {
+    flex-direction: row;
+    flex: 1;
+    justify-content: space-around;
+    gap: 0;
+  }
+
+  .link {
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 8px;
+    font-size: 10px;
+    border-radius: 8px;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-width: 0;
+  }
+
+  .icon { font-size: 20px; }
+  .label { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 }

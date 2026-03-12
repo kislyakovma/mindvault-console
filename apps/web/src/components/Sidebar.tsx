@@ -21,7 +21,7 @@ export default function Sidebar() {
           <Link key={l.href} href={l.href}
             className={`${styles.link} ${path === l.href ? styles.active : ''}`}>
             <span className={styles.icon}>{l.icon}</span>
-            {l.label}
+            <span className={styles.label}>{l.label}</span>
           </Link>
         ))}
       </nav>
