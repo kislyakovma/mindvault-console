@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Delete, Patch, Put, Body, Param, Req, UseGuards, Query } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { AdminService } from './admin.service'
+import { BillingService } from '../billing/billing.service'
 import { JwtAuthGuard } from '../auth/jwt.guard'
 
 @ApiTags('Admin')
@@ -8,7 +9,7 @@ import { JwtAuthGuard } from '../auth/jwt.guard'
 @UseGuards(JwtAuthGuard)
 @Controller('api/admin')
 export class AdminController {
-  constructor(private svc: AdminService) {}
+  constructor(private svc: AdminService, private billing: BillingService) {}
 
   @Get('users')
   listUsers(@Req() req: any, @Query('search') search?: string) {
@@ -56,5 +57,28 @@ export class AdminController {
   updateBrief(@Req() req: any, @Param('briefId') briefId: string, @Body() body: any) {
     const { title, ...data } = body
     return this.svc.updateUserBrief(req.user.id, briefId, data, title)
+  }
+
+  // ─── Billing ─────────────────────────────────────────────────────────────
+
+  @Get('users/:id/balance')
+  getUserBalance(@Req() req: any, @Param('id') id: string) {
+    return this.svc.assertAdmin(req.user.id).then(() => this.billing.getBalance(id))
+  }
+
+  @Get('users/:id/transactions')
+  getUserTransactions(@Req() req: any, @Param('id') id: string, @Query('limit') limit?: string) {
+    return this.svc.assertAdmin(req.user.id).then(() => this.billing.getTransactions(id, limit ? parseInt(limit) : 50))
+  }
+
+  @Post('users/:id/balance/adjust')
+  adjustBalance(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { amountKopecks: number; description: string },
+  ) {
+    return this.svc.assertAdmin(req.user.id).then(() =>
+      this.billing.adminAdjust(id, body.amountKopecks, body.description)
+    )
   }
 }

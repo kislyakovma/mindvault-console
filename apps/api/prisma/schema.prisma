@@ -15,17 +15,20 @@ model User {
   firstName        String?  @map("first_name")
   lastName         String?  @map("last_name")
   telegramUsername String?  @map("telegram_username")
+  balanceKopecks   Int      @default(0) @map("balance_kopecks")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  sessions          Session[]
-  briefs            Brief[]
-  subscription      Subscription?
-  payments          Payment[]
-  provisioningJob   ProvisioningJob?
-  supportTickets    SupportTicket[]
-  auditLogs         AuditLog[]
-  vpnCerts          VpnCert[]
+  sessions              Session[]
+  briefs                Brief[]
+  subscription          Subscription?
+  payments              Payment[]
+  provisioningJob       ProvisioningJob?
+  supportTickets        SupportTicket[]
+  auditLogs             AuditLog[]
+  vpnCerts              VpnCert[]
+  balanceTransactions   BalanceTransaction[]
+  assistantSubs         AssistantSubscription[]
 
   @@map("users")
 }
@@ -55,7 +58,8 @@ model Brief {
   createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assistantSubs AssistantSubscription[]
 
   @@map("briefs")
 }
@@ -237,4 +241,52 @@ model VpnCert {
 enum VpnStatus {
   ACTIVE
   REVOKED
+}
+
+// ── Balance & Billing ────────────────────────────────────────────────────────
+
+model BalanceTransaction {
+  id          String          @id @default(uuid())
+  userId      String          @map("user_id")
+  amountKopecks Int           @map("amount_kopecks")  // + пополнение, - списание
+  type        TxType
+  description String
+  meta        Json?           // provider payment id, assistantId, etc
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("balance_transactions")
+}
+
+model AssistantSubscription {
+  id              String     @id @default(uuid())
+  userId          String     @map("user_id")
+  briefId         String     @map("brief_id")
+  status          SubStatus  @default(ACTIVE)
+  priceKopecks    Int        @map("price_kopecks")   // стоимость в месяц
+  billingCycleDay Int        @default(1) @map("billing_cycle_day") // день списания
+  nextBillingAt   DateTime   @map("next_billing_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brief Brief @relation(fields: [briefId], references: [id], onDelete: Cascade)
+
+  @@map("assistant_subscriptions")
+}
+
+enum TxType {
+  TOPUP       // пополнение (платёж)
+  CHARGE      // списание за ассистента
+  REFUND      // возврат
+  BONUS       // бонус от администратора
+  ADJUSTMENT  // ручная корректировка
+}
+
+enum SubStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
 }

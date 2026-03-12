@@ -1,0 +1,123 @@
+.page { max-width: 640px; }
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  margin-bottom: 24px;
+}
+
+/* Balance card */
+.balanceCard {
+  background: linear-gradient(135deg, rgba(198,241,53,0.08), rgba(198,241,53,0.03));
+  border: 1px solid rgba(198,241,53,0.25);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.balanceLabel {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.balanceAmount {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--lime);
+  margin: 4px 0 8px;
+}
+.balanceSub { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.topupBtn {
+  align-self: flex-start;
+  background: var(--lime);
+  color: #0a0a0f;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 22px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.topupBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 16px var(--lime-glow); }
+.topupBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.cardTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.empty { font-size: 13px; color: var(--muted); }
+
+/* Subscriptions */
+.subList { display: flex; flex-direction: column; gap: 0; }
+.subRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.subRow:last-child { border-bottom: none; }
+.subInfo { flex: 1; min-width: 0; }
+.subName { font-size: 14px; font-weight: 500; }
+.subMeta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.subDate { color: var(--muted); }
+.subRight { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.subPrice { font-size: 13px; color: var(--text); white-space: nowrap; }
+.cancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cancelBtn:hover:not(:disabled) { color: #ff4d4f; border-color: rgba(255,77,79,0.4); }
+
+/* Transactions */
+.txList { display: flex; flex-direction: column; gap: 0; }
+.txRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.txRow:last-child { border-bottom: none; }
+.txIcon {
+  font-size: 16px;
+  font-weight: 700;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.txInfo { flex: 1; min-width: 0; }
+.txDesc { font-size: 13px; }
+.txDate { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.txAmount { font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .balanceAmount { font-size: 32px; }
+  .subRow { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

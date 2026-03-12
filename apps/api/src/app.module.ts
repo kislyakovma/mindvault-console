@@ -8,6 +8,7 @@ import { ProvisioningModule } from './provisioning/provisioning.module'
 import { SupportModule } from './support/support.module'
 import { AdminModule } from './admin/admin.module'
 import { VpnModule } from './vpn/vpn.module'
+import { BillingModule } from './billing/billing.module'
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { VpnModule } from './vpn/vpn.module'
     SupportModule,
     AdminModule,
     VpnModule,
+    BillingModule,
   ],
 })
 export class AppModule {}
