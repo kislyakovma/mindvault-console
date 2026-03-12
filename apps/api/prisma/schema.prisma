@@ -261,20 +261,27 @@ model BalanceTransaction {
 }
 
 model AssistantSubscription {
-  id              String     @id @default(uuid())
-  userId          String     @map("user_id")
-  briefId         String     @map("brief_id")
-  status          SubStatus  @default(ACTIVE)
-  priceKopecks    Int        @map("price_kopecks")   // стоимость в месяц
-  billingCycleDay Int        @default(1) @map("billing_cycle_day") // день списания
-  nextBillingAt   DateTime   @map("next_billing_at")
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+  briefId         String      @map("brief_id")
+  plan            AssistantPlan @default(PLUS)
+  status          SubStatus   @default(ACTIVE)
+  priceKopecks    Int         @map("price_kopecks")
+  billingCycleDay Int         @default(1) @map("billing_cycle_day")
+  nextBillingAt   DateTime    @map("next_billing_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   brief Brief @relation(fields: [briefId], references: [id], onDelete: Cascade)
 
   @@map("assistant_subscriptions")
+}
+
+enum AssistantPlan {
+  PLUS  // 499 руб/мес — базовый
+  PRO   // 999 руб/мес — расширенный
+  MAX   // 1999 руб/мес — максимальный
 }
 
 enum TxType {

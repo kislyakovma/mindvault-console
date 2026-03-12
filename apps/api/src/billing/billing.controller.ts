@@ -26,8 +26,8 @@ export class BillingController {
   }
 
   @Post('subscriptions')
-  subscribe(@Req() req: any, @Body() body: { briefId: string }) {
-    return this.svc.subscribe(req.user.id, body.briefId)
+  subscribe(@Req() req: any, @Body() body: { briefId: string; plan?: string }) {
+    return this.svc.subscribe(req.user.id, body.briefId, body.plan ?? 'PLUS')
   }
 
   @Delete('subscriptions/:id')

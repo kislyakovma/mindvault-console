@@ -1,7 +1,17 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 
-const ASSISTANT_PRICE_KOPECKS = 49900 // 499 руб/мес
+export const PLAN_PRICES: Record<string, number> = {
+  PLUS: 49900,   // 499 руб/мес
+  PRO:  99900,   // 999 руб/мес
+  MAX:  199900,  // 1999 руб/мес
+}
+
+export const PLAN_LABELS: Record<string, string> = {
+  PLUS: 'Plus',
+  PRO:  'Pro',
+  MAX:  'Max',
+}
 
 @Injectable()
 export class BillingService {
@@ -83,25 +93,26 @@ export class BillingService {
     })
   }
 
-  async subscribe(userId: string, briefId: string) {
-    // Проверяем что бриф принадлежит пользователю
+  async subscribe(userId: string, briefId: string, plan: string = 'PLUS') {
+    const planKey = plan.toUpperCase()
+    if (!PLAN_PRICES[planKey]) throw new BadRequestException('Неверный план')
+
     const brief = await this.prisma.brief.findFirst({ where: { id: briefId, userId } })
     if (!brief) throw new NotFoundException('Ассистент не найден')
 
-    // Проверяем нет ли уже активной подписки
     const existing = await this.prisma.assistantSubscription.findFirst({
       where: { userId, briefId, status: 'ACTIVE' },
     })
     if (existing) throw new BadRequestException('Подписка уже активна')
 
-    // Списываем первый месяц
-    await this.charge(userId, ASSISTANT_PRICE_KOPECKS, `Подписка на ассистента «${brief.title}»`, { briefId })
+    const priceKopecks = PLAN_PRICES[planKey]
+    await this.charge(userId, priceKopecks, `Подписка ${PLAN_LABELS[planKey]} на ассистента «${brief.title}»`, { briefId, plan: planKey })
 
     const nextBillingAt = new Date()
     nextBillingAt.setMonth(nextBillingAt.getMonth() + 1)
 
     return this.prisma.assistantSubscription.create({
-      data: { userId, briefId, priceKopecks: ASSISTANT_PRICE_KOPECKS, nextBillingAt, status: 'ACTIVE' },
+      data: { userId, briefId, plan: planKey as any, priceKopecks, nextBillingAt, status: 'ACTIVE' },
       include: { brief: { select: { id: true, title: true } } },
     })
   }
@@ -131,7 +142,6 @@ export class BillingService {
         await this.prisma.assistantSubscription.update({ where: { id: sub.id }, data: { nextBillingAt: next } })
         return { id: sub.id, status: 'charged' }
       } catch {
-        // Недостаточно средств — приостанавливаем
         await this.prisma.assistantSubscription.update({ where: { id: sub.id }, data: { status: 'PAUSED' } })
         return { id: sub.id, status: 'paused_insufficient_funds' }
       }
