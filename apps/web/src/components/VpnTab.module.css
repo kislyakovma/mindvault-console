@@ -1,0 +1,128 @@
+.wrap { max-width: 800px; }
+
+.intro {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.introIcon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.introTitle { font-family: var(--font-display); font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+.introText { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.cardTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.issueForm { display: flex; gap: 10px; flex-wrap: wrap; }
+.input {
+  flex: 1;
+  min-width: 200px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input:focus { border-color: var(--lime); }
+.issueBtn {
+  background: var(--lime);
+  color: #0a0a0f;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.issueBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 16px var(--lime-glow); }
+.issueBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.notice {
+  margin-top: 12px;
+  padding: 9px 13px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+.ok { background: rgba(82,196,26,0.1); border: 1px solid rgba(82,196,26,0.25); color: #52c41a; }
+.err { background: rgba(255,77,79,0.1); border: 1px solid rgba(255,77,79,0.25); color: #ff4d4f; }
+
+.empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+
+/* Таблица */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 0 12px 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.table td {
+  padding: 12px 12px 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+.table tr:last-child td { border-bottom: none; }
+.table tr.revoked td { opacity: 0.5; }
+
+.certName { font-weight: 500; }
+.date { color: var(--muted); white-space: nowrap; }
+
+.badgeActive {
+  font-size: 11px;
+  color: #52c41a;
+  white-space: nowrap;
+}
+.badgeRevoked {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.actions { display: flex; gap: 8px; justify-content: flex-end; }
+.actionBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.actionBtn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.revokeBtn:hover { color: #ff4d4f; border-color: rgba(255,77,79,0.4); background: rgba(255,77,79,0.06); }
+
+@media (max-width: 600px) {
+  .table th:nth-child(2), .table td:nth-child(2) { display: none; }
+  .actions { flex-direction: column; gap: 4px; }
+}

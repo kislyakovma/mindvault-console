@@ -1,19 +1,44 @@
 'use client'
+import { useState } from 'react'
 import StatusCard from '@/components/StatusCard'
 import ProvisioningSteps from '@/components/ProvisioningSteps'
+import VpnTab from '@/components/VpnTab'
+import styles from './dashboard.module.css'
+
+const TABS = [
+  { id: 'status', label: '⚡ Статус' },
+  { id: 'vpn', label: '🔒 VPN' },
+]
 
 export default function DashboardPage() {
-  // TODO: fetch real data via TanStack Query
+  const [tab, setTab] = useState('status')
   const status = 'DRAFT'
   const step = 'NONE'
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 28, marginBottom: 32 }}>
-        Статус системы
-      </h1>
-      <StatusCard status={status} />
-      <ProvisioningSteps currentStep={step} status={status} />
+      <h1 className={styles.title}>Система</h1>
+
+      <div className={styles.tabs}>
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            className={`${styles.tab} ${tab === t.id ? styles.tabActive : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'status' && (
+        <div>
+          <StatusCard status={status} />
+          <ProvisioningSteps currentStep={step} status={status} />
+        </div>
+      )}
+
+      {tab === 'vpn' && <VpnTab />}
     </div>
   )
 }

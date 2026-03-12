@@ -25,6 +25,7 @@ model User {
   provisioningJob   ProvisioningJob?
   supportTickets    SupportTicket[]
   auditLogs         AuditLog[]
+  vpnCerts          VpnCert[]
 
   @@map("users")
 }
@@ -211,4 +212,25 @@ enum TicketStatus {
 enum AuthorType {
   USER
   ADMIN
+}
+
+model VpnCert {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  name         String
+  status       VpnStatus @default(ACTIVE)
+  privateKey   String    @map("private_key")
+  publicKey    String    @map("public_key")
+  presharedKey String    @map("preshared_key")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  revokedAt    DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("vpn_certs")
+}
+
+enum VpnStatus {
+  ACTIVE
+  REVOKED
 }
