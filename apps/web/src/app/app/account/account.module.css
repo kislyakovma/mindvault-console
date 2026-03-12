@@ -88,6 +88,7 @@
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .logout {
+  display: none;
   background: transparent;
   border: 1px solid rgba(255,77,79,0.3);
   border-radius: var(--radius);
@@ -99,3 +100,4 @@
   margin-top: 8px;
 }
 .logout:hover { background: rgba(255,77,79,0.08); border-color: rgba(255,77,79,0.6); }
+@media (max-width: 768px) { .logout { display: block; } }
