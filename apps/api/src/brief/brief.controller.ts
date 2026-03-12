@@ -31,7 +31,7 @@ export class BriefController {
   }
 
   @Put(':id')
-  save(@Req() req: any, @Param('id') id: string, @Body() body: Record<string, unknown>) {
+  save(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     return this.svc.save(req.user.id, id, body)
   }
 

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 
 @Injectable()
@@ -27,18 +28,19 @@ export class BriefService {
     return { id: brief.id, title: brief.title, status: brief.status }
   }
 
-  async save(userId: string, briefId: string, data: Record<string, unknown>) {
+  async save(userId: string, briefId: string, data: Prisma.InputJsonValue) {
     const brief = await this.prisma.brief.findUnique({ where: { id: briefId } })
     if (!brief) throw new NotFoundException()
     if (brief.userId !== userId) throw new ForbiddenException()
 
-    const filled = !!(data.botName || data.role || data.goals)
+    const d = data as Record<string, unknown>
+    const filled = !!(d.botName || d.role || d.goals)
     const status = filled ? 'SUBMITTED' : 'DRAFT'
-    const botName = (data.botName as string) || brief.botName || null
+    const botName = (d.botName as string) || brief.botName || null
 
     const updated = await this.prisma.brief.update({
       where: { id: briefId },
-      data: { dataJson: data, status, botName, title: (data.title as string) || brief.title },
+      data: { dataJson: data, status, botName, title: (d.title as string) || brief.title },
     })
     return { id: updated.id, status: updated.status, updatedAt: updated.updatedAt }
   }
