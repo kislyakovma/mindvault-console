@@ -107,7 +107,7 @@ export default function DashboardPage() {
                   ok={sysStatus.hasBrief}
                   label="Бриф"
                   sub={sysStatus.hasBrief
-                    ? `Обновлён ${sysStatus.briefUpdatedAt ? new Date(sysStatus.briefUpdatedAt).toLocaleDateString('ru') : ''}`
+                    ? `Заполнено брифов: ${sysStatus.briefs.filter(b => b.status === 'SUBMITTED').length}`
                     : 'Расскажите о себе — бот настроится под вас'}
                   href="/app/brief"
                 />
