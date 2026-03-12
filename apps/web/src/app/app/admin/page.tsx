@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { SkeletonRow } from '@/components/Skeleton'
 import styles from './admin.module.css'
 
 interface User {
@@ -160,7 +161,7 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <div className={styles.loading}>Загрузка...</div>
+          <div>{[...Array(5)].map((_, i) => <SkeletonRow key={i} />)}</div>
         ) : users.length === 0 ? (
           <div className={styles.loading}>Ничего не найдено</div>
         ) : (

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch, apiJson } from '@/lib/api'
+import { SkeletonCard } from '@/components/Skeleton'
 import styles from './briefs.module.css'
 
 interface Brief {
@@ -84,7 +85,9 @@ export default function BriefListPage() {
       )}
 
       {loading ? (
-        <div className={styles.loading}>Загрузка...</div>
+        <div className={styles.grid}>
+          {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       ) : briefs.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>📋</div>

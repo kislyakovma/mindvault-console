@@ -48,6 +48,7 @@
 }
 
 .loading { color: var(--muted); font-size: 13px; }
+.skeletonList { display: flex; flex-direction: column; }
 
 /* Status list */
 .statusList { display: flex; flex-direction: column; gap: 4px; }

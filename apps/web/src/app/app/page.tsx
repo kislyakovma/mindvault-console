@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import VpnTab from '@/components/VpnTab'
 import { apiJson } from '@/lib/api'
+import { SkeletonStatusItem, Skeleton } from '@/components/Skeleton'
 import styles from './dashboard.module.css'
 
 const TABS = [
@@ -68,10 +69,14 @@ export default function DashboardPage() {
 
   const name = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : ''
 
+
   return (
     <div>
       <div className={styles.welcomeRow}>
-        <h1 className={styles.title}>{name ? `Привет, ${name.split(' ')[0]} 👋` : 'Система'}</h1>
+        {loading
+          ? <Skeleton width="220px" height="32px" radius="8px" />
+          : <h1 className={styles.title}>{name ? `Привет, ${name.split(' ')[0]} 👋` : 'Система'}</h1>
+        }
       </div>
 
       <div className={styles.tabs}>
@@ -91,7 +96,9 @@ export default function DashboardPage() {
           <div className={styles.card}>
             <div className={styles.cardTitle}>Статус настройки</div>
             {loading ? (
-              <div className={styles.loading}>Загрузка...</div>
+              <div className={styles.skeletonList}>
+                {[...Array(4)].map((_, i) => <SkeletonStatusItem key={i} />)}
+              </div>
             ) : (
               <div className={styles.statusList}>
                 <StatusItem

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { apiJson, apiFetch } from '@/lib/api'
+import { SkeletonCard, SkeletonText } from '@/components/Skeleton'
 import styles from './user.module.css'
 
 interface Brief {
@@ -139,7 +140,16 @@ export default function AdminUserPage() {
       )}
 
       {loading ? (
-        <div className={styles.empty}>Загрузка...</div>
+        <div className={styles.layout}>
+          <div className={styles.list}>
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+          <div className={styles.detail} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <SkeletonText lines={2} />
+            <SkeletonText lines={4} />
+            <SkeletonText lines={3} />
+          </div>
+        </div>
       ) : (
         <div className={styles.layout}>
           {/* Список ассистентов */}

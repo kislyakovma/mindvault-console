@@ -1,11 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { Skeleton } from '@/components/Skeleton'
 import styles from './account.module.css'
 
 const API = process.env.NEXT_PUBLIC_API_URL || ''
 
 export default function AccountPage() {
   const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [tg, setTg] = useState('')
@@ -28,6 +30,7 @@ export default function AccountPage() {
         setLastName(u.lastName || '')
         setTg(u.telegramUsername || '')
       })
+      .finally(() => setLoading(false))
   }, [])
 
   async function saveProfile(e: React.FormEvent) {
@@ -51,6 +54,25 @@ export default function AccountPage() {
     setPassMsg(res.ok ? 'Пароль изменён' : 'Неверный текущий пароль')
     if (res.ok) { setCurrent(''); setNewPass('') }
   }
+
+  if (loading) return (
+    <div className={styles.page}>
+      <Skeleton width="120px" height="30px" radius="8px" />
+      <div style={{ height: 24 }} />
+      {[...Array(2)].map((_, i) => (
+        <div key={i} className={styles.card} style={{ marginBottom: 16 }}>
+          <Skeleton width="80px" height="11px" radius="4px" />
+          <div style={{ height: 16 }} />
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Skeleton height="38px" radius="8px" />
+            <Skeleton height="38px" radius="8px" />
+          </div>
+          <div style={{ height: 12 }} />
+          <Skeleton height="38px" radius="8px" />
+        </div>
+      ))}
+    </div>
+  )
 
   return (
     <div className={styles.page}>
