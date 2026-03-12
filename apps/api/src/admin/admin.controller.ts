@@ -16,8 +16,8 @@ export class AdminController {
   }
 
   @Post('users')
-  createUser(@Req() req: any, @Body() body: { email: string; telegramUsername?: string }) {
-    return this.svc.createUser(req.user.id, body.email, body.telegramUsername)
+  createUser(@Req() req: any, @Body() body: { email: string; telegramUsername: string; firstName?: string; lastName?: string }) {
+    return this.svc.createUser(req.user.id, body.email, body.telegramUsername, body.firstName, body.lastName)
   }
 
   @Delete('users/:id')

@@ -16,9 +16,11 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [tg, setTg] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [creating, setCreating] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
-  const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
+  const [newCreds, setNewCreds] = useState<{ email: string; password: string; sentToUser: boolean } | null>(null)
 
   const token = () => typeof window !== 'undefined' ? localStorage.getItem('access_token') || '' : ''
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` })
@@ -43,12 +45,12 @@ export default function AdminPage() {
       const res = await fetch(`${API}/api/admin/users`, {
         method: 'POST',
         headers: headers(),
-        body: JSON.stringify({ email, telegramUsername: tg || undefined }),
+        body: JSON.stringify({ email, telegramUsername: tg, firstName: firstName || undefined, lastName: lastName || undefined }),
       })
       const data = await res.json()
       if (!res.ok) { setMsg({ text: data.message || 'Ошибка', ok: false }); return }
-      setNewCreds({ email: data.user.email, password: data.password })
-      setEmail(''); setTg('')
+      setNewCreds({ email: data.user.email, password: data.password, sentToUser: data.sentToUser })
+      setEmail(''); setTg(''); setFirstName(''); setLastName('')
       load()
     } catch { setMsg({ text: 'Ошибка сети', ok: false }) }
     finally { setCreating(false) }
@@ -76,9 +78,13 @@ export default function AdminPage() {
       <div className={styles.card}>
         <div className={styles.cardTitle}>Добавить пользователя</div>
         <form className={styles.form} onSubmit={create}>
+          <div className={styles.row}>
+            <input className={styles.input} type="text" placeholder="Имя" value={firstName} onChange={e => setFirstName(e.target.value)} />
+            <input className={styles.input} type="text" placeholder="Фамилия" value={lastName} onChange={e => setLastName(e.target.value)} />
+          </div>
           <input className={styles.input} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className={styles.input} type="text" placeholder="Telegram @username (необязательно)" value={tg} onChange={e => setTg(e.target.value)} />
-          <button className={styles.btn} type="submit" disabled={creating || !email}>
+          <input className={styles.input} type="text" placeholder="Telegram @username *" value={tg} onChange={e => setTg(e.target.value)} required />
+          <button className={styles.btn} type="submit" disabled={creating || !email || !tg}>
             {creating ? 'Создаём...' : 'Создать и отправить пароль →'}
           </button>
         </form>
@@ -94,7 +100,11 @@ export default function AdminPage() {
             <div className={styles.credsTitle}>✓ Аккаунт создан</div>
             <div className={styles.cred}><span>Email</span><code>{newCreds.email}</code></div>
             <div className={styles.cred}><span>Пароль</span><code>{newCreds.password}</code></div>
-            <div className={styles.credsNote}>Пароль отправлен в Telegram. Сохраните его — повторно не показываем.</div>
+            <div className={styles.credsNote}>
+              {newCreds.sentToUser
+                ? '✓ Пароль отправлен пользователю в Telegram.'
+                : '⚠️ Пользователь не писал боту — пароль отправлен вам. Передайте вручную.'}
+            </div>
           </div>
         )}
       </div>

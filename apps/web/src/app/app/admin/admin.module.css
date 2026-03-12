@@ -24,6 +24,9 @@
 }
 
 .form { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; gap: 10px; }
+.row .input { flex: 1; }
+@media (max-width: 480px) { .row { flex-direction: column; } }
 
 .input {
   background: var(--surface2);

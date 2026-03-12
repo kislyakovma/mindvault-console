@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common'
+import { Injectable, ForbiddenException, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { ConfigService } from '@nestjs/config'
 import * as bcrypt from 'bcrypt'
@@ -26,28 +26,47 @@ export class AdminService {
   async listUsers(adminId: string) {
     await this.assertAdmin(adminId)
     return this.prisma.user.findMany({
-      select: { id: true, email: true, role: true, createdAt: true },
+      select: { id: true, email: true, role: true, firstName: true, lastName: true, telegramUsername: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     })
   }
 
-  async createUser(adminId: string, email: string, telegramUsername?: string) {
+  async createUser(
+    adminId: string,
+    email: string,
+    telegramUsername: string,
+    firstName?: string,
+    lastName?: string,
+  ) {
     await this.assertAdmin(adminId)
 
+    if (!telegramUsername) throw new BadRequestException('Telegram username is required')
+
     const exists = await this.prisma.user.findUnique({ where: { email } })
-    if (exists) throw new Error('Email already exists')
+    if (exists) throw new BadRequestException('Email already exists')
 
     const password = randomBytes(6).toString('base64url').slice(0, 10)
     const passwordHash = await bcrypt.hash(password, 12)
+    const tg = telegramUsername.replace('@', '')
 
     const user = await this.prisma.user.create({
-      data: { email, passwordHash, role: 'USER' },
+      data: {
+        email,
+        passwordHash,
+        role: 'USER',
+        firstName: firstName || null,
+        lastName: lastName || null,
+        telegramUsername: tg,
+      },
     })
 
-    // Отправляем пароль через TG-бот
-    await this.sendCredentials(email, password, telegramUsername)
+    const sent = await this.sendCredentialsToUser(tg, email, password, firstName)
 
-    return { user: { id: user.id, email: user.email, role: user.role, createdAt: user.createdAt }, password }
+    return {
+      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, telegramUsername: user.telegramUsername, createdAt: user.createdAt },
+      password,
+      sentToUser: sent,
+    }
   }
 
   async deleteUser(adminId: string, userId: string) {
@@ -60,41 +79,67 @@ export class AdminService {
   async resetPassword(adminId: string, userId: string) {
     await this.assertAdmin(adminId)
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
-    if (!user) throw new Error('User not found')
+    if (!user) throw new BadRequestException('User not found')
 
     const password = randomBytes(6).toString('base64url').slice(0, 10)
     const passwordHash = await bcrypt.hash(password, 12)
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } })
     await this.prisma.session.deleteMany({ where: { userId } })
 
-    await this.sendCredentials(user.email, password)
+    if (user.telegramUsername) {
+      await this.sendCredentialsToUser(user.telegramUsername, user.email, password, user.firstName || undefined)
+    }
 
-    return { password }
+    return { password, sentToUser: !!user.telegramUsername }
   }
 
-  private async sendCredentials(email: string, password: string, telegramUsername?: string) {
-    if (!this.bot) return
+  // Отправка через бота напрямую пользователю по username
+  private async sendCredentialsToUser(
+    telegramUsername: string,
+    email: string,
+    password: string,
+    firstName?: string | null,
+  ): Promise<boolean> {
+    if (!this.bot) return false
 
-    const adminChatId = this.cfg.get<string>('TELEGRAM_ADMIN_CHAT_ID')
-    const text = `🔐 *Новый аккаунт MindVault*\n\nEmail: \`${email}\`\nПароль: \`${password}\`\n\n[Войти →](https://console.mvault.ru/login)`
+    const name = firstName ? firstName : 'Привет'
+    const text =
+      `${name}! 👋\n\n` +
+      `Ваш аккаунт MindVault создан.\n\n` +
+      `📧 Email: \`${email}\`\n` +
+      `🔑 Пароль: \`${password}\`\n\n` +
+      `[Войти в личный кабинет →](https://console.mvault.ru/login)\n\n` +
+      `_Сохраните пароль — повторно он не отправляется._`
 
-    // Пробуем отправить пользователю если знаем username
-    if (telegramUsername) {
-      try {
-        const username = telegramUsername.replace('@', '')
-        // Пересылаем через канал (у бота нет прямого доступа без /start от юзера)
-        // Сохраняем для ручной отправки через интерфейс
-      } catch (_) {}
+    try {
+      // Telegram не позволяет отправить по username без chat_id
+      // Используем getUpdates чтобы найти chat_id по username
+      const updates = await this.bot.telegram.getUpdates(0, 100, undefined, ['message'])
+      const tgLower = telegramUsername.toLowerCase().replace('@', '')
+
+      const match = updates.find(u =>
+        u.message?.from?.username?.toLowerCase() === tgLower
+      )
+
+      if (match?.message?.chat?.id) {
+        await this.bot.telegram.sendMessage(match.message.chat.id, text, { parse_mode: 'Markdown' })
+        return true
+      }
+    } catch (e) {
+      console.error('TG send error:', (e as any).message)
     }
 
-    // Всегда шлём в admin-чат (Михаилу)
+    // Fallback: отправить админу с пометкой
+    const adminChatId = this.cfg.get<string>('TELEGRAM_ADMIN_CHAT_ID')
     if (adminChatId) {
-      const userNote = telegramUsername ? `\nTelegram: @${telegramUsername.replace('@', '')}` : ''
       await this.bot.telegram.sendMessage(
         adminChatId,
-        text + userNote,
+        `⚠️ Не удалось отправить напрямую @${telegramUsername} (пользователь не писал боту).\n\n` +
+        `Передайте вручную:\n📧 \`${email}\`\n🔑 \`${password}\``,
         { parse_mode: 'Markdown' }
-      ).catch(e => console.error('TG send error:', e.message))
+      ).catch(() => {})
     }
+
+    return false
   }
 }
