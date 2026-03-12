@@ -16,9 +16,24 @@
   padding: 40px;
 }
 
+.row { display: flex; gap: 10px; }
+.row .field { flex: 1; }
+
+.inputPrefix { position: relative; display: flex; align-items: center; }
+.inputPrefix span {
+  position: absolute;
+  left: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+.inputPrefix input { padding-left: 24px; }
+
 @media (max-width: 480px) {
   .card { padding: 28px 20px; border-radius: 16px; }
   .title { font-size: 20px; }
+  .row { flex-direction: column; gap: 0; }
 }
 
 .logo {

@@ -4,12 +4,19 @@ import Link from 'next/link'
 import styles from '../login/login.module.css'
 
 export default function SignupPage() {
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [tg, setTg] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const valid = email.length > 3 && password.length >= 8
+  const valid = firstName.trim().length > 0
+    && lastName.trim().length > 0
+    && tg.trim().length > 0
+    && email.length > 3
+    && password.length >= 8
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -19,8 +26,13 @@ export default function SignupPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          telegramUsername: tg.replace('@', ''),
+          email,
+          password,
+        }),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
@@ -39,12 +51,29 @@ export default function SignupPage() {
         <div className={styles.logo}>Mind<span>Vault</span></div>
         <h1 className={styles.title}>Регистрация</h1>
         <form className={styles.form} onSubmit={handleSubmit}>
+          <div className={styles.row}>
+            <div className={styles.field}>
+              <label>Имя *</label>
+              <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Иван" />
+            </div>
+            <div className={styles.field}>
+              <label>Фамилия *</label>
+              <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Иванов" />
+            </div>
+          </div>
           <div className={styles.field}>
-            <label>Email</label>
+            <label>Telegram *</label>
+            <div className={styles.inputPrefix}>
+              <span>@</span>
+              <input value={tg} onChange={e => setTg(e.target.value.replace('@', ''))} placeholder="username" />
+            </div>
+          </div>
+          <div className={styles.field}>
+            <label>Email *</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
           </div>
           <div className={styles.field}>
-            <label>Пароль (мин. 8 символов)</label>
+            <label>Пароль * (мин. 8 символов)</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
           {error && <div className={styles.error}>{error}</div>}

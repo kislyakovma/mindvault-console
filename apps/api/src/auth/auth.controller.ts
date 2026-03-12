@@ -9,8 +9,8 @@ export class AuthController {
   constructor(private auth: AuthService) {}
 
   @Post('signup')
-  async signup(@Body() body: { email: string; password: string }, @Res({ passthrough: true }) res: any) {
-    const result = await this.auth.signup(body.email, body.password)
+  async signup(@Body() body: { email: string; password: string; firstName: string; lastName: string; telegramUsername: string }, @Res({ passthrough: true }) res: any) {
+    const result = await this.auth.signup(body.email, body.password, body.firstName, body.lastName, body.telegramUsername)
     res.cookie('refresh_token', result.refreshToken, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 30 * 24 * 3600 * 1000 })
     return { accessToken: result.accessToken, user: result.user }
   }

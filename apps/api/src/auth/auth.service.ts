@@ -13,11 +13,19 @@ export class AuthService {
     private cfg: ConfigService,
   ) {}
 
-  async signup(email: string, password: string) {
+  async signup(email: string, password: string, firstName: string, lastName: string, telegramUsername: string) {
     const exists = await this.prisma.user.findUnique({ where: { email } })
     if (exists) throw new ConflictException('Email already registered')
     const passwordHash = await bcrypt.hash(password, 12)
-    const user = await this.prisma.user.create({ data: { email, passwordHash } })
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        telegramUsername: telegramUsername.replace('@', ''),
+      },
+    })
     const { accessToken, refreshToken } = await this.issueTokens(user.id)
     await this.saveRefreshToken(user.id, refreshToken)
     return { accessToken, refreshToken, user: this.sanitize(user) }
