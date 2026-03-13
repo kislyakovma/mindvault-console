@@ -9,14 +9,14 @@ export class ProvisioningController {
 
   /**
    * Полный провижн: создать бота + задеплоить OpenClaw на VPS
-   * Body: { briefId, sshHost, sshPassword, openrouterKey, sshUser? }
+   * Body: { briefId, sshHost, sshPassword, plan?, sshUser? }
    */
   @Post('provision')
   provision(@Req() req: any, @Body() body: {
     briefId: string
     sshHost: string
     sshPassword: string
-    openrouterKey: string
+    plan?: string
     sshUser?: string
   }) {
     return this.svc.provisionAssistant({
@@ -25,7 +25,7 @@ export class ProvisioningController {
       sshHost: body.sshHost,
       sshUser: body.sshUser || 'root',
       sshPassword: body.sshPassword,
-      openrouterKey: body.openrouterKey,
+      plan: body.plan,
     })
   }
 }
