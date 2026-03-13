@@ -2,6 +2,7 @@ import { Controller, Get, Post, Delete, Patch, Put, Body, Param, Req, UseGuards,
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { AdminService } from './admin.service'
 import { BillingService } from '../billing/billing.service'
+import { ProvisioningService } from '../provisioning/provisioning.service'
 import { JwtAuthGuard } from '../auth/jwt.guard'
 
 @ApiTags('Admin')
@@ -9,7 +10,11 @@ import { JwtAuthGuard } from '../auth/jwt.guard'
 @UseGuards(JwtAuthGuard)
 @Controller('api/admin')
 export class AdminController {
-  constructor(private svc: AdminService, private billing: BillingService) {}
+  constructor(
+    private svc: AdminService,
+    private billing: BillingService,
+    private provisioning: ProvisioningService,
+  ) {}
 
   @Get('users')
   listUsers(@Req() req: any, @Query('search') search?: string) {
@@ -57,6 +62,18 @@ export class AdminController {
   updateBrief(@Req() req: any, @Param('briefId') briefId: string, @Body() body: any) {
     const { title, ...data } = body
     return this.svc.updateUserBrief(req.user.id, briefId, data, title)
+  }
+
+  @Post('briefs/:briefId/deploy')
+  async deployBrief(@Req() req: any, @Param('briefId') briefId: string) {
+    await this.svc.assertAdmin(req.user.id)
+    // OR ключ с лимитом $2 для admin-деплоя
+    return this.provisioning.provisionAssistant({
+      briefId,
+      userId: null as any, // resolves from brief
+      plan: 'ADMIN',
+      orCreditLimitUsd: 2,
+    })
   }
 
   // ─── Billing ─────────────────────────────────────────────────────────────

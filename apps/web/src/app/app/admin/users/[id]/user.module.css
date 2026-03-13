@@ -220,3 +220,18 @@
   .layout { flex-direction: column; }
   .list { width: 100%; }
 }
+
+.deployBtn {
+  background: #1a1a2e;
+  color: #a78bfa;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 7px 16px;
+  border: 1px solid #a78bfa;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.deployBtn:hover { background: #2d2b55; }
+.deployBtn:disabled { opacity: 0.5; cursor: not-allowed; }

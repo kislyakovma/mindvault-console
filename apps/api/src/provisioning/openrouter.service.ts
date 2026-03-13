@@ -57,6 +57,16 @@ export class OpenRouterService {
     return { key: result.key, hash: result.hash, name }
   }
 
+  // Создать ключ с произвольным лимитом в USD (для admin deploy)
+  async createKeyWithLimit(userId: string, limitUsd: number): Promise<ORCreateResult> {
+    const name = `mindvault_admin_${userId.slice(0, 8)}_${Date.now()}`
+    const body = JSON.stringify({ name, limit: limitUsd })
+    const result = await this.post('/keys', body)
+    if (!result.key) throw new Error(`OpenRouter key creation failed: ${JSON.stringify(result)}`)
+    this.logger.log(`Created OR key (admin) for user ${userId} limit=$${limitUsd}`)
+    return { key: result.key, hash: result.hash, name }
+  }
+
   // Обновить лимит существующего ключа
   async updateKeyLimit(keyHash: string, plan: string): Promise<void> {
     const limit = PLAN_LIMITS[plan.toUpperCase()] ?? PLAN_LIMITS.PLUS

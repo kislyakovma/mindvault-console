@@ -62,6 +62,7 @@ export default function AdminUserPage() {
   const [creating, setCreating] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [deploying, setDeploying] = useState(false)
 
   useEffect(() => {
     apiJson(`/api/admin/users/${id}/briefs`)
@@ -191,7 +192,31 @@ export default function AdminUserPage() {
                       <button className={styles.cancelBtn} onClick={() => { setEditing(false); setEditData({ ...selected }) }}>Отмена</button>
                     </>
                   ) : (
-                    <button className={styles.editBtn} onClick={() => setEditing(true)}>Редактировать</button>
+                    <>
+                      <button className={styles.editBtn} onClick={() => setEditing(true)}>Редактировать</button>
+                      {selected.status === 'SUBMITTED' && (
+                        <button
+                          className={styles.deployBtn}
+                          disabled={deploying}
+                          onClick={async () => {
+                            if (!confirm(`Задеплоить «${selected.title}»?\nOR ключ с лимитом $2`)) return
+                            setDeploying(true)
+                            setMsg(null)
+                            const res = await apiFetch(`/api/admin/briefs/${selected.id}/deploy`, { method: 'POST' })
+                            const data = await res.json()
+                            setDeploying(false)
+                            if (res.ok) {
+                              setMsg({ text: `✅ Деплой запущен: ${data.bot?.username || 'ok'}`, ok: true })
+                              openBrief(selected.id)
+                            } else {
+                              setMsg({ text: data.message || 'Ошибка деплоя', ok: false })
+                            }
+                          }}
+                        >
+                          {deploying ? '⏳ Деплой...' : '🚀 Задеплоить'}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

@@ -95,8 +95,9 @@ export class ProvisioningService {
 
   async provisionAssistant(params: {
     briefId: string
-    userId: string
+    userId?: string | null
     plan?: string
+    orCreditLimitUsd?: number
   }) {
     const brief = await this.prisma.brief.findUnique({
       where: { id: params.briefId },
@@ -104,24 +105,34 @@ export class ProvisioningService {
     })
     if (!brief) throw new Error('Brief not found')
 
+    const userId = params.userId || brief.userId
     const data = brief.dataJson as Record<string, any>
     const botName = data.botName || brief.title || 'Ассистент'
     const plan = params.plan || 'PLUS'
 
-    // 1. Создаём/получаем OpenRouter ключ для пользователя
+    // 1. Создаём/получаем OpenRouter ключ
     let orKey: string
-    if (brief.user.orApiKey) {
+    if (plan === 'ADMIN') {
+      // Admin deploy: всегда новый ключ с лимитом $2
+      const limitUsd = params.orCreditLimitUsd ?? 2
+      this.logger.log(`Admin deploy: creating OR key with $${limitUsd} limit for brief ${params.briefId}`)
+      const keyResult = await this.or.createKeyWithLimit(userId, limitUsd)
+      orKey = keyResult.key
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { orApiKey: keyResult.key, orApiKeyHash: keyResult.hash },
+      })
+    } else if (brief.user.orApiKey) {
       // Уже есть — переиспользуем
       orKey = brief.user.orApiKey
-      this.logger.log(`Reusing existing OR key for user ${params.userId}`)
+      this.logger.log(`Reusing existing OR key for user ${userId}`)
     } else {
       // Создаём новый с лимитом по плану
-      this.logger.log(`Creating OR key for user ${params.userId} plan=${plan}`)
-      const keyResult = await this.or.createKeyForUser(params.userId, plan)
+      this.logger.log(`Creating OR key for user ${userId} plan=${plan}`)
+      const keyResult = await this.or.createKeyForUser(userId, plan)
       orKey = keyResult.key
-      // Сохраняем в БД
       await this.prisma.user.update({
-        where: { id: params.userId },
+        where: { id: userId },
         data: { orApiKey: keyResult.key, orApiKeyHash: keyResult.hash },
       })
     }
@@ -133,7 +144,7 @@ export class ProvisioningService {
       bot = { token: brief.botToken, username: brief.botName.replace(/^@/, '') }
       this.logger.log(`Reusing existing bot @${bot.username} for brief ${params.briefId}`)
     } else {
-      const slug = `mv_${params.userId.slice(0, 6)}_${params.briefId.slice(0, 6)}_bot`
+      const slug = `mv_${userId.slice(0, 6)}_${params.briefId.slice(0, 6)}_bot`
         .replace(/[^a-z0-9_]/gi, '_')
         .toLowerCase()
       this.logger.log(`Creating bot: ${botName} (@${slug})`)
@@ -155,7 +166,7 @@ export class ProvisioningService {
     const telegramId = brief.user.telegramId || null
     const deployResult = await this.deployAssistant({
       briefId: params.briefId,
-      userId: params.userId,
+      userId,
       botToken: bot.token,
       openrouterKey: orKey,
       model,
