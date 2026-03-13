@@ -347,10 +347,11 @@ exit 1
     fs.writeFileSync(tmpFile, script, { mode: 0o700 })
 
     try {
-      // SSH на хост через 172.17.0.1 (Docker gateway) — там root может systemctl
-      const hostKey = this.config.get<string>('HOST_SSH_KEY_PATH') || '/run/secrets/host_ssh_key'
+      // SSH на выделенный VPS под ассистентов
+      const hostKey = this.config.get<string>('HOST_SSH_KEY_PATH') || '/etc/mindvault-ssh/id_deploy'
+      const deployHost = this.config.get<string>('ASSISTANTS_HOST') || '194.147.35.123'
       const sshCmd = `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ` +
-        `-i ${hostKey} root@172.17.0.1 ` +
+        `-i ${hostKey} root@${deployHost} ` +
         `'bash /opt/assistants/_deploys/${scriptName}'`
 
       const { stdout, stderr } = await execAsync(sshCmd, { timeout: 120000 })
