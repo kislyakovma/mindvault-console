@@ -3,12 +3,11 @@ import { PrismaService } from '../prisma/prisma.service'
 import { execSync } from 'child_process'
 import * as fs from 'fs'
 
-// VPN peer limit per plan
+// VPN peer limit per plan (только для пользователей с купленным ассистентом)
 export const VPN_LIMITS: Record<string, number> = {
   PLUS: 2,
   PRO:  5,
   MAX:  10,
-  FREE: 1,
 }
 
 const SERVER_PUBLIC_KEY = (() => {
@@ -31,22 +30,28 @@ export class VpnService {
       select: { id: true, name: true, status: true, createdAt: true, revokedAt: true, publicKey: true },
     })
 
-    const limit = await this.getUserVpnLimit(userId)
+    const { limit, plan } = await this.getUserVpnLimit(userId)
     const active = certs.filter(c => c.status === 'ACTIVE').length
 
-    return { certs, limit, active }
+    return { certs, limit, active, plan }
   }
 
   async issueCert(userId: string, name: string) {
-    // Проверяем лимит по подписке
-    const limit = await this.getUserVpnLimit(userId)
+    const { limit, plan } = await this.getUserVpnLimit(userId)
+
+    if (!plan || limit === 0) {
+      throw new ForbiddenException(
+        'VPN доступен только при наличии активной подписки на ассистента.'
+      )
+    }
+
     const active = await this.prisma.vpnCert.count({
       where: { userId, status: 'ACTIVE' },
     })
 
     if (active >= limit) {
       throw new ForbiddenException(
-        `Достигнут лимит VPN-сертификатов для вашего плана (${limit}). Обновите подписку.`
+        `Достигнут лимит VPN-сертификатов для плана ${plan} (${limit} шт.). Обновите подписку.`
       )
     }
 
@@ -141,12 +146,12 @@ export class VpnService {
     throw new Error('VPN IP pool exhausted')
   }
 
-  private async getUserVpnLimit(userId: string): Promise<number> {
+  private async getUserVpnLimit(userId: string): Promise<{ limit: number; plan: string | null }> {
     const sub = await this.prisma.assistantSubscription.findFirst({
       where: { userId, status: 'ACTIVE' },
       select: { plan: true },
     })
-    const plan = sub?.plan || 'FREE'
-    return VPN_LIMITS[plan] ?? VPN_LIMITS.FREE
+    if (!sub) return { limit: 0, plan: null }
+    return { limit: VPN_LIMITS[sub.plan] ?? 0, plan: sub.plan }
   }
 }

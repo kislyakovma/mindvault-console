@@ -255,7 +255,12 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     const linuxUser = `mv_${params.userId.replace(/-/g, '').slice(0, 8)}`
 
     return `#!/bin/bash
-set -e
+# MindVault Assistant Deploy Script
+# briefId: ${params.briefId}
+# userId:  ${params.userId}
+# service: ${SERVICE}
+# port:    ${port}
+set -euo pipefail
 
 ASSISTANT_HOME="${ASSISTANT_HOME}"
 SERVICE="${SERVICE}"
@@ -264,47 +269,50 @@ NODE_BIN="/usr/bin/node"
 OC_MAIN="/usr/lib/node_modules/openclaw/dist/index.js"
 LINUX_USER="${linuxUser}"
 
-# 1. Создаём изолированного Linux user если нет
+echo "[1/7] Создаём изолированного Linux user..."
 if ! id "$LINUX_USER" &>/dev/null; then
   useradd --system --no-create-home --shell /usr/sbin/nologin "$LINUX_USER"
-  echo "Created system user: $LINUX_USER"
+  echo "  → Создан system user: $LINUX_USER"
+else
+  echo "  → Уже существует: $LINUX_USER"
 fi
 
-# 2. Создаём директорию ассистента с правильными правами
+echo "[2/7] Создаём директорию ассистента..."
 mkdir -p "$ASSISTANT_HOME/.openclaw/workspace/vault"
-chown -R "$LINUX_USER:$LINUX_USER" "$ASSISTANT_HOME"
+# Права до записи файлов — пишем от root, потом передадим
 chmod 700 "$ASSISTANT_HOME"
 
-# 3. Конфиг openclaw
+echo "[3/7] Записываем конфиг openclaw..."
 cat > "$ASSISTANT_HOME/.openclaw/openclaw.json" << 'CONFIGEOF'
 ${configJson}
 CONFIGEOF
 
-# 4. SOUL.md
+echo "[4/7] Записываем workspace (SOUL, USER, AGENTS)..."
 cat > "$ASSISTANT_HOME/.openclaw/workspace/SOUL.md" << 'SOULEOF'
 ${soulEscaped}
 SOULEOF
 
-# 5. USER.md
 cat > "$ASSISTANT_HOME/.openclaw/workspace/USER.md" << 'USEREOF'
 ${userEscaped}
 USEREOF
 
-# 6. AGENTS.md
+# Копируем AGENTS.md с основного workspace
 if [ -f "/root/.openclaw/workspace/AGENTS.md" ]; then
   cp /root/.openclaw/workspace/AGENTS.md "$ASSISTANT_HOME/.openclaw/workspace/AGENTS.md"
 fi
 
-# 7. Env с API ключом
+echo "[5/7] Записываем .env..."
 cat > "$ASSISTANT_HOME/.env" << 'ENVEOF'
 OPENROUTER_API_KEY=${params.openrouterKey}
 ENVEOF
-
-# Восстанавливаем права после записи файлов
-chown -R "$LINUX_USER:$LINUX_USER" "$ASSISTANT_HOME"
 chmod 600 "$ASSISTANT_HOME/.env"
 
-# 8. systemd сервис с hardening
+echo "[6/7] Устанавливаем права (owner: $LINUX_USER)..."
+chown -R "$LINUX_USER:$LINUX_USER" "$ASSISTANT_HOME"
+# Директория недоступна другим пользователям
+chmod 700 "$ASSISTANT_HOME"
+
+echo "[7/7] Создаём systemd сервис..."
 cat > "/etc/systemd/system/$SERVICE.service" << SVCEOF
 [Unit]
 Description=MindVault Assistant ${params.briefId.slice(0, 8)}
@@ -320,7 +328,7 @@ Restart=always
 RestartSec=15
 TimeoutStartSec=60
 
-# Security hardening
+# Изоляция процесса
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
@@ -335,8 +343,16 @@ SVCEOF
 systemctl daemon-reload
 systemctl enable "$SERVICE"
 systemctl restart "$SERVICE"
-sleep 5
-systemctl is-active "$SERVICE" && echo "DEPLOYED_OK: $SERVICE port $PORT" || (journalctl -u "$SERVICE" -n 10 --no-pager; echo "DEPLOY_FAILED")
+
+echo "Ожидаем запуска..."
+sleep 6
+if systemctl is-active "$SERVICE" --quiet; then
+  echo "DEPLOYED_OK: $SERVICE port $PORT"
+else
+  echo "DEPLOY_FAILED: статус сервиса:"
+  journalctl -u "$SERVICE" -n 15 --no-pager
+  exit 1
+fi
 `
   }
 

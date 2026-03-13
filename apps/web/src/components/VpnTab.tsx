@@ -15,6 +15,9 @@ interface Cert {
 
 export default function VpnTab() {
   const [certs, setCerts] = useState<Cert[]>([])
+  const [limit, setLimit] = useState<number>(0)
+  const [active, setActive] = useState<number>(0)
+  const [plan, setPlan] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -29,7 +32,10 @@ export default function VpnTab() {
     try {
       const res = await fetch(`${API}/api/vpn/certs`, { headers: headers() })
       const data = await res.json()
-      setCerts(Array.isArray(data) ? data : [])
+      setCerts(Array.isArray(data.certs) ? data.certs : [])
+      setLimit(data.limit ?? 0)
+      setActive(data.active ?? 0)
+      setPlan(data.plan ?? null)
     } finally { setLoading(false) }
   }, [])
 
@@ -74,6 +80,7 @@ export default function VpnTab() {
 
   const activeCerts = certs.filter(c => c.status === 'ACTIVE')
   const revokedCerts = certs.filter(c => c.status === 'REVOKED')
+  const canIssue = plan && active < limit
 
   return (
     <div className={styles.wrap}>
@@ -82,27 +89,56 @@ export default function VpnTab() {
         <div className={styles.introIcon}>🔒</div>
         <div>
           <div className={styles.introTitle}>WireGuard VPN</div>
-          <div className={styles.introText}>Каждый сертификат — отдельный пир. Выпускайте под устройство: телефон, ноутбук, планшет. Отозванные сертификаты немедленно блокируются.</div>
+          <div className={styles.introText}>
+            Каждый сертификат — отдельный пир под устройство: телефон, ноутбук, планшет.
+            {plan && <> Доступно по плану <strong>{plan}</strong>: {active}/{limit} сертификатов.</>}
+          </div>
         </div>
       </div>
 
+      {/* Нет подписки */}
+      {!plan && !loading && (
+        <div className={styles.locked}>
+          <div className={styles.lockedIcon}>🔐</div>
+          <div className={styles.lockedTitle}>VPN недоступен</div>
+          <div className={styles.lockedText}>VPN доступен только при наличии активной подписки на ассистента.</div>
+          <a href="/app/brief" className={styles.lockedBtn}>Создать ассистента →</a>
+        </div>
+      )}
+
       {/* Форма выпуска */}
-      <div className={styles.card}>
-        <div className={styles.cardTitle}>Выпустить новый сертификат</div>
-        <form className={styles.issueForm} onSubmit={issue}>
-          <input
-            className={styles.input}
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            placeholder="Название устройства, например: iPhone, MacBook..."
-            required
-          />
-          <button className={styles.issueBtn} type="submit" disabled={creating || !newName.trim()}>
-            {creating ? 'Генерируем...' : '+ Выпустить'}
-          </button>
-        </form>
-        {msg && <div className={`${styles.notice} ${msg.ok ? styles.ok : styles.err}`}>{msg.text}</div>}
-      </div>
+      {plan && (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>Выпустить новый сертификат</div>
+            <div className={styles.limitBadge}>
+              <span className={active >= limit ? styles.limitFull : styles.limitOk}>
+                {active}/{limit}
+              </span>
+            </div>
+          </div>
+
+          {canIssue ? (
+            <form className={styles.issueForm} onSubmit={issue}>
+              <input
+                className={styles.input}
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                placeholder="Название устройства, например: iPhone, MacBook..."
+                required
+              />
+              <button className={styles.issueBtn} type="submit" disabled={creating || !newName.trim()}>
+                {creating ? 'Генерируем...' : '+ Выпустить'}
+              </button>
+            </form>
+          ) : (
+            <div className={styles.limitReached}>
+              Достигнут лимит для плана {plan}. Отзовите неиспользуемый сертификат или обновите подписку.
+            </div>
+          )}
+          {msg && <div className={`${styles.notice} ${msg.ok ? styles.ok : styles.err}`}>{msg.text}</div>}
+        </div>
+      )}
 
       {/* Активные */}
       <div className={styles.card}>
