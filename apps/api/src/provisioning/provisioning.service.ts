@@ -371,18 +371,26 @@ fi
     const path = await import('path')
     const execAsync = promisify(exec)
 
-    const tmpFile = path.join(os.tmpdir(), `deploy_${Date.now()}.sh`)
+    // Скрипт пишем в /opt/assistants/_deploys — директория должна быть примонтирована
+    const deploysDir = '/opt/assistants/_deploys'
+    try { fs.mkdirSync(deploysDir, { recursive: true }) } catch { /* ok */ }
+
+    const scriptName = `deploy_${Date.now()}.sh`
+    const tmpFile = path.join(deploysDir, scriptName)
     fs.writeFileSync(tmpFile, script, { mode: 0o700 })
 
     try {
-      const { stdout, stderr } = await execAsync(`bash ${tmpFile}`, {
-        timeout: 120000,
-        uid: 0, // root — нужен для useradd и systemctl
-      })
+      // SSH на хост через 172.17.0.1 (Docker gateway) — там root может systemctl
+      const hostKey = this.config.get<string>('HOST_SSH_KEY_PATH') || '/run/secrets/host_ssh_key'
+      const sshCmd = `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ` +
+        `-i ${hostKey} root@172.17.0.1 ` +
+        `'bash /opt/assistants/_deploys/${scriptName}'`
+
+      const { stdout, stderr } = await execAsync(sshCmd, { timeout: 120000 })
       this.logger.log(`Deploy output: ${stdout}`)
       if (stderr) this.logger.warn(`Deploy stderr: ${stderr}`)
       if (stdout.includes('DEPLOY_FAILED')) {
-        throw new Error('Deploy script reported failure')
+        throw new Error(`Deploy script reported failure:\n${stdout}`)
       }
     } finally {
       fs.unlink(tmpFile, () => {})
