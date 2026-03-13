@@ -232,6 +232,7 @@ model VpnCert {
   privateKey   String    @map("private_key")
   publicKey    String    @map("public_key")
   presharedKey String    @map("preshared_key")
+  peerIp       String?   @map("peer_ip")
   createdAt    DateTime  @default(now()) @map("created_at")
   revokedAt    DateTime? @map("revoked_at")
 

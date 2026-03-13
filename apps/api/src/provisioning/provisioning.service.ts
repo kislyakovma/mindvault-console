@@ -38,28 +38,25 @@ export class ProvisioningService {
   async deployAssistant(params: {
     briefId: string
     userId: string
-    sshHost: string
-    sshUser: string
-    sshPassword: string
     botToken: string
     openrouterKey: string
     model?: string
     briefData: Record<string, any>
+    // SSH оставляем для будущего, но деплоим локально
+    sshHost?: string
+    sshUser?: string
+    sshPassword?: string
   }): Promise<{ success: boolean; message: string }> {
-    const { briefId, userId, sshHost, botToken, openrouterKey, briefData } = params
+    const { briefId, userId, botToken, openrouterKey, briefData } = params
 
-    // Обновляем статус → deploying
     await this.prisma.brief.update({
       where: { id: briefId },
       data: { botStatus: 'deploying' },
     })
 
     try {
-      // Генерируем SOUL.md из данных брифа
       const soul = this.generateSoul(briefData)
       const user = this.generateUser(briefData)
-
-      // Деплой скрипт (выполняется на VPS через SSH)
       const ocVersion = '2026.3.11'
       const deployScript = this.buildDeployScript({
         botToken,
@@ -73,16 +70,15 @@ export class ProvisioningService {
         callbackUrl: this.config.get('API_URL') || 'https://api.mvault.ru',
       })
 
-      // Запускаем деплой через webhook-сервер или SSH executor
-      // Для MVP — вызываем SSH через child_process
-      await this.runDeployScript(sshHost, params.sshUser, params.sshPassword, deployScript)
+      // Деплоим локально на основном сервере
+      await this.runDeployScriptLocally(deployScript)
 
       await this.prisma.brief.update({
         where: { id: briefId },
         data: { botStatus: 'active' },
       })
 
-      this.logger.log(`Assistant deployed for brief ${briefId} on ${sshHost}`)
+      this.logger.log(`Assistant deployed locally for brief ${briefId}`)
       return { success: true, message: 'Assistant deployed successfully' }
     } catch (e) {
       this.logger.error(`Deploy failed for brief ${briefId}: ${e.message}`)
@@ -99,9 +95,6 @@ export class ProvisioningService {
   async provisionAssistant(params: {
     briefId: string
     userId: string
-    sshHost: string
-    sshUser?: string
-    sshPassword?: string
     plan?: string
   }) {
     const brief = await this.prisma.brief.findUnique({
@@ -147,14 +140,11 @@ export class ProvisioningService {
       data: { botName: `@${bot.username}`, botStatus: 'deploying' },
     })
 
-    // 5. Деплоим на VPS с правильной моделью по плану
+    // 5. Деплоим локально на основном сервере
     const model = PLAN_MODELS[plan.toUpperCase()] || PLAN_MODELS.PLUS
     const deployResult = await this.deployAssistant({
       briefId: params.briefId,
       userId: params.userId,
-      sshHost: params.sshHost,
-      sshUser: params.sshUser || 'root',
-      sshPassword: params.sshPassword || '',
       botToken: bot.token,
       openrouterKey: orKey,
       model,
@@ -261,6 +251,9 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     }
     const configJson = JSON.stringify(baseConfig, null, 2)
 
+    // Linux username: mv_ + первые 8 символов userId (только a-z0-9)
+    const linuxUser = `mv_${params.userId.replace(/-/g, '').slice(0, 8)}`
+
     return `#!/bin/bash
 set -e
 
@@ -269,17 +262,20 @@ SERVICE="${SERVICE}"
 PORT="${port}"
 NODE_BIN="/usr/bin/node"
 OC_MAIN="/usr/lib/node_modules/openclaw/dist/index.js"
+LINUX_USER="${linuxUser}"
 
-# 1. Установка openclaw если нет
-if [ ! -f "$OC_MAIN" ]; then
-  echo "Installing openclaw..."
-  NODE_OPTIONS="--max-old-space-size=512" npm install -g openclaw --ignore-scripts 2>&1
+# 1. Создаём изолированного Linux user если нет
+if ! id "$LINUX_USER" &>/dev/null; then
+  useradd --system --no-create-home --shell /usr/sbin/nologin "$LINUX_USER"
+  echo "Created system user: $LINUX_USER"
 fi
 
-# 2. Создаём директорию ассистента
+# 2. Создаём директорию ассистента с правильными правами
 mkdir -p "$ASSISTANT_HOME/.openclaw/workspace/vault"
+chown -R "$LINUX_USER:$LINUX_USER" "$ASSISTANT_HOME"
+chmod 700 "$ASSISTANT_HOME"
 
-# 3. Конфиг openclaw (шаблон с основного сервера, отпатченный)
+# 3. Конфиг openclaw
 cat > "$ASSISTANT_HOME/.openclaw/openclaw.json" << 'CONFIGEOF'
 ${configJson}
 CONFIGEOF
@@ -295,29 +291,42 @@ ${userEscaped}
 USEREOF
 
 # 6. AGENTS.md
-if [ -f "/usr/lib/node_modules/openclaw/docs/AGENTS.md" ]; then
-  cp /usr/lib/node_modules/openclaw/docs/AGENTS.md "$ASSISTANT_HOME/.openclaw/workspace/AGENTS.md"
+if [ -f "/root/.openclaw/workspace/AGENTS.md" ]; then
+  cp /root/.openclaw/workspace/AGENTS.md "$ASSISTANT_HOME/.openclaw/workspace/AGENTS.md"
 fi
 
 # 7. Env с API ключом
 cat > "$ASSISTANT_HOME/.env" << 'ENVEOF'
 OPENROUTER_API_KEY=${params.openrouterKey}
-HOME=${ASSISTANT_HOME}
 ENVEOF
 
-# 8. systemd сервис (user-level не работает без loginctl, ставим system)
+# Восстанавливаем права после записи файлов
+chown -R "$LINUX_USER:$LINUX_USER" "$ASSISTANT_HOME"
+chmod 600 "$ASSISTANT_HOME/.env"
+
+# 8. systemd сервис с hardening
 cat > "/etc/systemd/system/$SERVICE.service" << SVCEOF
 [Unit]
 Description=MindVault Assistant ${params.briefId.slice(0, 8)}
 After=network.target
 
 [Service]
+User=$LINUX_USER
+Group=$LINUX_USER
 Environment=HOME=$ASSISTANT_HOME
 EnvironmentFile=$ASSISTANT_HOME/.env
-ExecStart=$NODE_BIN --max-old-space-size=384 $OC_MAIN gateway --port $PORT
+ExecStart=$NODE_BIN --max-old-space-size=768 $OC_MAIN gateway --port $PORT
 Restart=always
 RestartSec=15
 TimeoutStartSec=60
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=$ASSISTANT_HOME
+CapabilityBoundingSet=
+AmbientCapabilities=
 
 [Install]
 WantedBy=multi-user.target
@@ -326,24 +335,47 @@ SVCEOF
 systemctl daemon-reload
 systemctl enable "$SERVICE"
 systemctl restart "$SERVICE"
-sleep 3
-systemctl is-active "$SERVICE" && echo "DEPLOYED_OK: $SERVICE port $PORT" || (journalctl -u "$SERVICE" -n 5 --no-pager; echo "DEPLOY_FAILED")
+sleep 5
+systemctl is-active "$SERVICE" && echo "DEPLOYED_OK: $SERVICE port $PORT" || (journalctl -u "$SERVICE" -n 10 --no-pager; echo "DEPLOY_FAILED")
 `
   }
 
-  private async runDeployScript(
-    host: string,
-    user: string,
-    password: string,
-    script: string,
-  ): Promise<void> {
-    // Запускаем через sshpass + ssh
+  private async runDeployScriptLocally(script: string): Promise<void> {
     const { exec } = await import('child_process')
     const { promisify } = await import('util')
     const path = await import('path')
     const execAsync = promisify(exec)
 
-    // Пишем скрипт во временный файл
+    const tmpFile = path.join(os.tmpdir(), `deploy_${Date.now()}.sh`)
+    fs.writeFileSync(tmpFile, script, { mode: 0o700 })
+
+    try {
+      const { stdout, stderr } = await execAsync(`bash ${tmpFile}`, {
+        timeout: 120000,
+        uid: 0, // root — нужен для useradd и systemctl
+      })
+      this.logger.log(`Deploy output: ${stdout}`)
+      if (stderr) this.logger.warn(`Deploy stderr: ${stderr}`)
+      if (stdout.includes('DEPLOY_FAILED')) {
+        throw new Error('Deploy script reported failure')
+      }
+    } finally {
+      fs.unlink(tmpFile, () => {})
+    }
+  }
+
+  // Оставляем SSH метод для возможного использования в будущем
+  private async runDeployScriptViaSSH(
+    host: string,
+    user: string,
+    password: string,
+    script: string,
+  ): Promise<void> {
+    const { exec } = await import('child_process')
+    const { promisify } = await import('util')
+    const path = await import('path')
+    const execAsync = promisify(exec)
+
     const tmpFile = path.join(os.tmpdir(), `deploy_${Date.now()}.sh`)
     fs.writeFileSync(tmpFile, script, { mode: 0o700 })
 
@@ -353,7 +385,7 @@ systemctl is-active "$SERVICE" && echo "DEPLOYED_OK: $SERVICE port $PORT" || (jo
       this.logger.log(`Deploy output: ${stdout}`)
       if (stderr) this.logger.warn(`Deploy stderr: ${stderr}`)
     } finally {
-      fs.unlinkSync(tmpFile)
+      fs.unlink(tmpFile, () => {})
     }
   }
 
