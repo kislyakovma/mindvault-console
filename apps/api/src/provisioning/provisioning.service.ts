@@ -69,6 +69,7 @@ export class ProvisioningService {
         briefId,
         ocVersion,
         callbackUrl: this.config.get('API_URL') || 'https://api.mvault.ru',
+        briefData,
       })
 
       // Деплоим локально на основном сервере
@@ -231,6 +232,7 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     briefId: string
     ocVersion: string
     callbackUrl: string
+    briefData: Record<string, any>
   }): string {
     const soulEscaped = params.soul.replace(/\\/g, '\\\\').replace(/'/g, "'\\''")
     const userEscaped = params.user.replace(/\\/g, '\\\\').replace(/'/g, "'\\''")
@@ -331,7 +333,7 @@ cat > "$DATA_DIR/.openclaw/workspace/IDENTITY.md" << 'IDEOF'
 - **Creature:** AI-ассистент и «второй мозг»
 - **Vibe:** ${params.briefData.commStyle || 'дружелюбный и профессиональный'}
 - **Emoji:** 🧠
-- **User:** ${params.briefData.telegramUsername ? `@${params.briefData.telegramUsername}` : 'пользователь'}
+- **User:** ${params.briefData.telegramUsername ? '@' + params.briefData.telegramUsername : 'пользователь'}
 IDEOF
 
 # Пустой HEARTBEAT и TOOLS
@@ -356,9 +358,9 @@ else
 fi
 
 echo "Ожидаем запуска (до 30s)..."
-for i in $(seq 1 6); do
+for i in \$(seq 1 6); do
   sleep 5
-  STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER" 2>/dev/null || echo "missing")
+  STATUS=\$(docker inspect -f '{{.State.Status}}' "$CONTAINER" 2>/dev/null || echo "missing")
   if [ "$STATUS" = "running" ]; then
     echo "DEPLOYED_OK: $CONTAINER"
     exit 0
@@ -369,7 +371,7 @@ done
 echo "DEPLOY_FAILED: логи контейнера:"
 docker logs "$CONTAINER" --tail 20
 exit 1
-\`
+`
   }
 
   private async runDeployScriptLocally(script: string): Promise<void> {
