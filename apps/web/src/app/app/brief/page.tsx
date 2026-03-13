@@ -12,6 +12,9 @@ interface Brief {
   botName: string | null
   botStatus: string
   updatedAt: string
+  plan: string | null
+  usageCents: number | null
+  limitCents: number | null
 }
 
 const BOT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -99,11 +102,23 @@ export default function BriefListPage() {
         <div className={styles.grid}>
           {briefs.map(b => {
             const botSt = BOT_STATUS_LABELS[b.botStatus] || BOT_STATUS_LABELS.pending
+            const usagePct = b.usageCents && b.limitCents
+              ? Math.min(100, Math.round((b.usageCents / b.limitCents) * 100))
+              : null
+            const usageColor = usagePct === null ? '#6b6b8a'
+              : usagePct >= 90 ? '#ff4d4f'
+              : usagePct >= 70 ? '#faad14'
+              : '#c6f135'
             return (
               <div key={b.id} className={styles.card} onClick={() => router.push(`/app/brief/${b.id}`)}>
                 <div className={styles.cardTop}>
                   <div className={styles.cardTitle}>{b.title}</div>
-                  <button className={styles.deleteBtn} onClick={e => { e.stopPropagation(); deleteBrief(b.id, b.title) }} title="Удалить">✕</button>
+                  <div className={styles.cardTopRight}>
+                    {b.plan && (
+                      <span className={`${styles.planBadge} ${styles[`plan${b.plan}`]}`}>{b.plan}</span>
+                    )}
+                    <button className={styles.deleteBtn} onClick={e => { e.stopPropagation(); deleteBrief(b.id, b.title) }} title="Удалить">✕</button>
+                  </div>
                 </div>
 
                 <div className={styles.cardMeta}>
@@ -122,6 +137,21 @@ export default function BriefListPage() {
 
                 {b.botName && (
                   <div className={styles.botAddress}>{b.botName}</div>
+                )}
+
+                {usagePct !== null && (
+                  <div className={styles.usageBlock}>
+                    <div className={styles.usageBar}>
+                      <div
+                        className={styles.usageFill}
+                        style={{ width: `${usagePct}%`, background: usageColor }}
+                      />
+                    </div>
+                    <div className={styles.usageLabel}>
+                      <span>${((b.usageCents ?? 0) / 100).toFixed(2)}</span>
+                      <span style={{ color: '#6b6b8a' }}> / ${((b.limitCents ?? 0) / 100).toFixed(0)}</span>
+                    </div>
+                  </div>
                 )}
 
                 <div className={styles.cardFooter}>

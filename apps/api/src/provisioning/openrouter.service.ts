@@ -21,6 +21,8 @@ interface ORKey {
   disabled: boolean
   limit: number | null
   limit_remaining: number | null
+  usage: number
+  usage_monthly: number
   created_at: string
 }
 
@@ -80,7 +82,7 @@ export class OpenRouterService {
     const key = keys.data?.find(k => k.hash === keyHash)
     if (!key) throw new Error(`Key ${keyHash} not found`)
     return {
-      usage: 0, // usage_monthly недоступен через hash lookup, нужен отдельный запрос
+      usage: key.usage ?? 0,
       limit: key.limit,
       remaining: key.limit_remaining,
     }
