@@ -238,7 +238,15 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
       delete baseConfig[k]
     }
     // Обновляем нужные поля
-    baseConfig.channels = { telegram: { token: params.botToken, groupPolicy: 'deny' } }
+    baseConfig.channels = {
+      telegram: {
+        enabled: true,
+        botToken: params.botToken,
+        groupPolicy: 'disabled',
+        dmPolicy: 'open',
+        allowFrom: ['*'],
+      }
+    }
     if (baseConfig.gateway) {
       baseConfig.gateway.port = port
       baseConfig.gateway.bind = 'loopback'
