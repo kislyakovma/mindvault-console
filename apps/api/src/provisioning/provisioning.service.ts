@@ -236,7 +236,7 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     for (const k of ['meta', 'wizard', 'auth', 'tools', 'messages', 'commands', 'session']) {
       delete baseConfig[k]
     }
-    // Обновляем нужные поля
+    // Telegram channel
     baseConfig.channels = {
       telegram: {
         enabled: true,
@@ -246,17 +246,21 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
         allowFrom: ['*'],
       }
     }
-    if (baseConfig.gateway) {
-      baseConfig.gateway.port = port
-      baseConfig.gateway.bind = 'loopback'
-      baseConfig.gateway.auth = { mode: 'none' }
+    // Gateway — всегда явно, независимо от шаблона
+    baseConfig.gateway = {
+      port,
+      mode: 'local',
+      bind: 'loopback',
+      auth: { mode: 'none' },
+      tailscale: { mode: 'off', resetOnExit: false },
     }
-    if (baseConfig.agents?.defaults) {
-      baseConfig.agents.defaults.workspace = `${ASSISTANT_HOME}/.openclaw/workspace`
-      baseConfig.agents.defaults.model = {
-        primary: `openrouter/${params.model}`,
-        fallbacks: ['openrouter/auto'],
-      }
+    // Agent model
+    if (!baseConfig.agents) baseConfig.agents = {}
+    if (!baseConfig.agents.defaults) baseConfig.agents.defaults = {}
+    baseConfig.agents.defaults.workspace = `${ASSISTANT_HOME}/.openclaw/workspace`
+    baseConfig.agents.defaults.model = {
+      primary: `openrouter/${params.model}`,
+      fallbacks: ['openrouter/auto'],
     }
     const configJson = JSON.stringify(baseConfig, null, 2)
 
