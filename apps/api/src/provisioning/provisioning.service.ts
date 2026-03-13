@@ -314,10 +314,10 @@ After=network.target
 [Service]
 Environment=HOME=$ASSISTANT_HOME
 EnvironmentFile=$ASSISTANT_HOME/.env
-ExecStart=$NODE_BIN $OC_MAIN gateway --port $PORT
+ExecStart=$NODE_BIN --max-old-space-size=384 $OC_MAIN gateway --port $PORT
 Restart=always
-RestartSec=10
-TimeoutStartSec=30
+RestartSec=15
+TimeoutStartSec=60
 
 [Install]
 WantedBy=multi-user.target
