@@ -223,9 +223,9 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
   }): string {
     const soulEscaped = params.soul.replace(/\\/g, '\\\\').replace(/'/g, "'\\''")
     const userEscaped = params.user.replace(/\\/g, '\\\\').replace(/'/g, "'\\''")
-    const SERVICE = `mv-${params.userId.slice(0, 8)}`
+    const SERVICE = `mv-${params.userId.slice(0, 8)}-${params.briefId.slice(0, 8)}`
     // Каждый ассистент живёт в своём HOME — изолированный openclaw конфиг
-    const ASSISTANT_HOME = `/opt/assistants/${params.userId}`
+    const ASSISTANT_HOME = `/opt/assistants/${params.userId}/${params.briefId}`
     // Порт gateway: уникальный на основе hash briefId (19000-19999)
     const port = 19000 + (parseInt(params.briefId.replace(/-/g, '').slice(0, 4), 16) % 1000)
 
