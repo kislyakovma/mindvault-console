@@ -55,6 +55,7 @@ export class ProvisioningService {
       const user = this.generateUser(briefData)
 
       // Деплой скрипт (выполняется на VPS через SSH)
+      const ocVersion = '2026.3.11'
       const deployScript = this.buildDeployScript({
         botToken,
         openrouterKey,
@@ -62,6 +63,7 @@ export class ProvisioningService {
         user,
         userId,
         briefId,
+        ocVersion,
         callbackUrl: this.config.get('API_URL') || 'https://api.mvault.ru',
       })
 
@@ -183,64 +185,101 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     user: string
     userId: string
     briefId: string
+    ocVersion: string
     callbackUrl: string
   }): string {
-    const soulEscaped = params.soul.replace(/'/g, "'\\''")
-    const userEscaped = params.user.replace(/'/g, "'\\''")
+    const soulEscaped = params.soul.replace(/\\/g, '\\\\').replace(/'/g, "'\\''")
+    const userEscaped = params.user.replace(/\\/g, '\\\\').replace(/'/g, "'\\''")
+    const SERVICE = `mindvault-assistant-${params.briefId.slice(0, 8)}`
+    // Каждый ассистент живёт в своём HOME — изолированный openclaw конфиг
+    const ASSISTANT_HOME = `/opt/assistants/${params.userId}/${params.briefId}`
+    // Порт gateway: уникальный на основе hash briefId (19000-19999)
+    const port = 19000 + (parseInt(params.briefId.replace(/-/g, '').slice(0, 4), 16) % 1000)
 
     return `#!/bin/bash
 set -e
 
-# Установка openclaw если нет
-if ! command -v openclaw &>/dev/null; then
-  NODE_OPTIONS="--max-old-space-size=512" npm install -g openclaw --ignore-scripts
+ASSISTANT_HOME="${ASSISTANT_HOME}"
+SERVICE="${SERVICE}"
+PORT="${port}"
+NODE_BIN="/usr/bin/node"
+OC_MAIN="/usr/lib/node_modules/openclaw/dist/index.js"
+
+# 1. Установка openclaw если нет
+if [ ! -f "$OC_MAIN" ]; then
+  echo "Installing openclaw..."
+  NODE_OPTIONS="--max-old-space-size=512" npm install -g openclaw --ignore-scripts 2>&1
 fi
 
-# Создаём директорию ассистента
-ASSISTANT_DIR="/opt/assistants/${params.userId}/${params.briefId}"
-mkdir -p "$ASSISTANT_DIR/workspace/vault"
+# 2. Создаём директорию ассистента
+mkdir -p "$ASSISTANT_HOME/.openclaw/workspace/vault"
+mkdir -p "$ASSISTANT_HOME/.openclaw/agents"
 
-# Пишем конфиг
-cat > "$ASSISTANT_DIR/config.yaml" << 'CONFIGEOF'
-account: default
-model: openrouter/anthropic/claude-sonnet-4-6
-channels:
-  telegram:
-    token: "${params.botToken}"
+# 3. Конфиг openclaw (~/.openclaw/openclaw.json в ASSISTANT_HOME)
+cat > "$ASSISTANT_HOME/.openclaw/openclaw.json" << 'CONFIGEOF'
+{
+  "meta": { "version": 1 },
+  "wizard": { "completed": true },
+  "auth": {},
+  "agents": {
+    "defaults": {
+      "model": { "primary": "openrouter/anthropic/claude-sonnet-4-6" },
+      "workspaceDir": "${ASSISTANT_HOME}/.openclaw/workspace"
+    }
+  },
+  "tools": {},
+  "messages": {},
+  "commands": {},
+  "session": {},
+  "channels": {
+    "telegram": {
+      "token": "${params.botToken}",
+      "groupPolicy": "deny"
+    }
+  },
+  "gateway": {
+    "port": ${port},
+    "mode": "local",
+    "bind": "loopback",
+    "auth": { "mode": "none" }
+  },
+  "plugins": {}
+}
 CONFIGEOF
 
-# SOUL.md
-cat > "$ASSISTANT_DIR/workspace/SOUL.md" << 'SOULEOF'
+# 4. SOUL.md
+cat > "$ASSISTANT_HOME/.openclaw/workspace/SOUL.md" << 'SOULEOF'
 ${soulEscaped}
 SOULEOF
 
-# USER.md
-cat > "$ASSISTANT_DIR/workspace/USER.md" << 'USEREOF'
+# 5. USER.md
+cat > "$ASSISTANT_HOME/.openclaw/workspace/USER.md" << 'USEREOF'
 ${userEscaped}
 USEREOF
 
-# AGENTS.md (минимальный)
-cp /usr/lib/node_modules/openclaw/docs/AGENTS.md "$ASSISTANT_DIR/workspace/AGENTS.md" 2>/dev/null || true
+# 6. AGENTS.md
+if [ -f "/usr/lib/node_modules/openclaw/docs/AGENTS.md" ]; then
+  cp /usr/lib/node_modules/openclaw/docs/AGENTS.md "$ASSISTANT_HOME/.openclaw/workspace/AGENTS.md"
+fi
 
-# Env файл
-cat > "$ASSISTANT_DIR/.env" << 'ENVEOF'
+# 7. Env с API ключом
+cat > "$ASSISTANT_HOME/.env" << 'ENVEOF'
 OPENROUTER_API_KEY=${params.openrouterKey}
-TELEGRAM_BOT_TOKEN=${params.botToken}
+HOME=${ASSISTANT_HOME}
 ENVEOF
 
-# systemd сервис
-SERVICE="mindvault-assistant-${params.briefId.slice(0, 8)}"
+# 8. systemd сервис (user-level не работает без loginctl, ставим system)
 cat > "/etc/systemd/system/$SERVICE.service" << SVCEOF
 [Unit]
 Description=MindVault Assistant ${params.briefId.slice(0, 8)}
 After=network.target
 
 [Service]
-WorkingDirectory=$ASSISTANT_DIR
-EnvironmentFile=$ASSISTANT_DIR/.env
-ExecStart=/usr/bin/openclaw start --workspace $ASSISTANT_DIR/workspace --config $ASSISTANT_DIR/config.yaml
+EnvironmentFile=$ASSISTANT_HOME/.env
+ExecStart=$NODE_BIN $OC_MAIN gateway --port $PORT
 Restart=always
 RestartSec=10
+TimeoutStartSec=30
 
 [Install]
 WantedBy=multi-user.target
@@ -249,7 +288,8 @@ SVCEOF
 systemctl daemon-reload
 systemctl enable "$SERVICE"
 systemctl restart "$SERVICE"
-echo "DEPLOYED: $SERVICE"
+sleep 3
+systemctl is-active "$SERVICE" && echo "DEPLOYED_OK: $SERVICE port $PORT" || (journalctl -u "$SERVICE" -n 5 --no-pager; echo "DEPLOY_FAILED")
 `
   }
 
