@@ -53,7 +53,7 @@ export class AuthController {
   @ApiBearerAuth()
   async updateProfile(
     @Req() req: any,
-    @Body() body: { firstName?: string; lastName?: string; telegramUsername?: string },
+    @Body() body: { firstName?: string; lastName?: string; telegramUsername?: string; telegramId?: string },
   ) {
     return this.auth.updateProfile(req.user.id, body)
   }

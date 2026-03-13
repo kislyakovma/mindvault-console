@@ -41,8 +41,8 @@ export class ProvisioningService {
     botToken: string
     openrouterKey: string
     model?: string
+    telegramId?: string | null
     briefData: Record<string, any>
-    // SSH оставляем для будущего, но деплоим локально
     sshHost?: string
     sshUser?: string
     sshPassword?: string
@@ -62,6 +62,7 @@ export class ProvisioningService {
         botToken,
         openrouterKey,
         model: params.model || PLAN_MODELS.PLUS,
+        telegramId: params.telegramId,
         soul,
         user,
         userId,
@@ -151,12 +152,14 @@ export class ProvisioningService {
 
     // 5. Деплоим локально на основном сервере
     const model = PLAN_MODELS[plan.toUpperCase()] || PLAN_MODELS.PLUS
+    const telegramId = brief.user.telegramId || null
     const deployResult = await this.deployAssistant({
       briefId: params.briefId,
       userId: params.userId,
       botToken: bot.token,
       openrouterKey: orKey,
       model,
+      telegramId,
       briefData: data,
     })
 
@@ -210,6 +213,7 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     botToken: string
     openrouterKey: string
     model: string
+    telegramId?: string | null
     soul: string
     user: string
     userId: string
@@ -236,17 +240,19 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     for (const k of ['meta', 'wizard', 'auth', 'tools', 'messages', 'commands', 'session']) {
       delete baseConfig[k]
     }
-    // Telegram channel
+    // Telegram channel — allowFrom содержит Telegram ID создателя
+    const allowFrom = params.telegramId ? [params.telegramId] : ['*']
     baseConfig.channels = {
       telegram: {
         enabled: true,
         botToken: params.botToken,
         groupPolicy: 'disabled',
-        dmPolicy: 'open',
-        allowFrom: ['*'],
+        dmPolicy: 'allowlist',
+        allowFrom,
+        streaming: 'partial',
       }
     }
-    // Gateway — всегда явно, независимо от шаблона
+    // Gateway — явно, без лишнего
     baseConfig.gateway = {
       port,
       mode: 'local',
@@ -254,14 +260,18 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
       auth: { mode: 'none' },
       tailscale: { mode: 'off', resetOnExit: false },
     }
-    // Agent model
-    if (!baseConfig.agents) baseConfig.agents = {}
-    if (!baseConfig.agents.defaults) baseConfig.agents.defaults = {}
-    baseConfig.agents.defaults.workspace = `${ASSISTANT_HOME}/.openclaw/workspace`
-    baseConfig.agents.defaults.model = {
-      primary: `openrouter/${params.model}`,
-      fallbacks: ['openrouter/auto'],
+    // Agent — минимальный конфиг, без лишних моделей (источник OOM)
+    baseConfig.agents = {
+      defaults: {
+        workspace: `${ASSISTANT_HOME}/.openclaw/workspace`,
+        model: { primary: `openrouter/${params.model}` },
+        compaction: { mode: 'safeguard' },
+        maxConcurrent: 1,
+        subagents: { maxConcurrent: 2 },
+      }
     }
+    // Убираем тяжёлые ненужные плагины
+    baseConfig.plugins = {}
     const configJson = JSON.stringify(baseConfig, null, 2)
 
     // Linux username: mv_ + первые 8 символов userId (только a-z0-9)

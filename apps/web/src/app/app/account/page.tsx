@@ -11,6 +11,7 @@ export default function AccountPage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [tg, setTg] = useState('')
+  const [tgId, setTgId] = useState('')
   const [profileSaved, setProfileSaved] = useState(false)
 
   const [current, setCurrent] = useState('')
@@ -29,6 +30,7 @@ export default function AccountPage() {
         setFirstName(u.firstName || '')
         setLastName(u.lastName || '')
         setTg(u.telegramUsername || '')
+        setTgId(u.telegramId || '')
       })
       .finally(() => setLoading(false))
   }, [])
@@ -38,7 +40,7 @@ export default function AccountPage() {
     await fetch(`${API}/api/auth/profile`, {
       method: 'PUT',
       headers: headers(),
-      body: JSON.stringify({ firstName, lastName, telegramUsername: tg }),
+      body: JSON.stringify({ firstName, lastName, telegramUsername: tg, telegramId: tgId }),
     })
     setProfileSaved(true)
     setTimeout(() => setProfileSaved(false), 2000)
@@ -93,7 +95,9 @@ export default function AccountPage() {
             </div>
           </div>
           <div className={styles.field}>
-            <label>Telegram</label>
+            <label>Telegram ID <span style={{fontSize:11,color:'var(--muted)'}}>— числовой ID для бота (узнать: @userinfobot)</span></label>
+            <input value={tgId} onChange={e => setTgId(e.target.value.replace(/\D/g,''))} placeholder="78228912" style={{marginBottom:8}} />
+            <label>Telegram username</label>
             <div className={styles.inputIcon}>
               <span className={styles.prefix}>@</span>
               <input value={tg} onChange={e => setTg(e.target.value.replace('@', ''))} placeholder="username" />
