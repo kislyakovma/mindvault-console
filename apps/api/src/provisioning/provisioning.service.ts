@@ -223,9 +223,9 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
   }): string {
     const soulEscaped = params.soul.replace(/\\/g, '\\\\').replace(/'/g, "'\\''")
     const userEscaped = params.user.replace(/\\/g, '\\\\').replace(/'/g, "'\\''")
-    const SERVICE = `mindvault-assistant-${params.briefId.slice(0, 8)}`
+    const SERVICE = `mv-${params.userId.slice(0, 8)}`
     // Каждый ассистент живёт в своём HOME — изолированный openclaw конфиг
-    const ASSISTANT_HOME = `/opt/assistants/${params.userId}/${params.briefId}`
+    const ASSISTANT_HOME = `/opt/assistants/${params.userId}`
     // Порт gateway: уникальный на основе hash briefId (19000-19999)
     const port = 19000 + (parseInt(params.briefId.replace(/-/g, '').slice(0, 4), 16) % 1000)
 
@@ -269,7 +269,7 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
 # MindVault Assistant Deploy Script (Docker)
 # briefId: ${params.briefId}
 # userId:  ${params.userId}
-# container: ${CONTAINER}
+# userId:  ${params.userId}
 set -euo pipefail
 
 DATA_DIR="${ASSISTANT_HOME}"
@@ -299,17 +299,21 @@ if [ -f "/root/.openclaw/workspace/AGENTS.md" ]; then
 fi
 
 echo "[4/4] Запускаем Docker-контейнер..."
-docker rm -f "$CONTAINER" 2>/dev/null || true
-docker run -d \
-  --name "$CONTAINER" \
-  --restart unless-stopped \
-  --memory=1g --memory-swap=1g \
-  --cpus=1 \
-  -e OPENROUTER_API_KEY="${params.openrouterKey}" \
-  -e HOME=/home/oc \
-  -v "$DATA_DIR/.openclaw:/home/oc/.openclaw" \
-  --network none \
-  "$IMAGE"
+if docker inspect "$CONTAINER" &>/dev/null; then
+  echo "  → Контейнер уже существует, обновляем конфиг и рестартуем..."
+  docker restart "$CONTAINER"
+else
+  docker run -d \
+    --name "$CONTAINER" \
+    --restart unless-stopped \
+    --memory=2g \
+    --cpus=1 \
+    -e OPENROUTER_API_KEY="${params.openrouterKey}" \
+    -e HOME=/home/oc \
+    -v "$DATA_DIR/.openclaw:/home/oc/.openclaw" \
+    --network none \
+    "$IMAGE"
+fi
 
 echo "Ожидаем запуска (до 30s)..."
 for i in $(seq 1 6); do
