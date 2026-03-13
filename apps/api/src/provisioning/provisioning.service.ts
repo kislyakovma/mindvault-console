@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
+import { OpenRouterService, PLAN_MODELS } from './openrouter.service'
 import * as https from 'https'
 import * as http from 'http'
 import * as fs from 'fs'
@@ -13,6 +14,7 @@ export class ProvisioningService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private or: OpenRouterService,
   ) {}
 
   // ─── BotFactory ───────────────────────────────────────────────────────────
@@ -41,6 +43,7 @@ export class ProvisioningService {
     sshPassword: string
     botToken: string
     openrouterKey: string
+    model?: string
     briefData: Record<string, any>
   }): Promise<{ success: boolean; message: string }> {
     const { briefId, userId, sshHost, botToken, openrouterKey, briefData } = params
@@ -61,6 +64,7 @@ export class ProvisioningService {
       const deployScript = this.buildDeployScript({
         botToken,
         openrouterKey,
+        model: params.model || PLAN_MODELS.PLUS,
         soul,
         user,
         userId,
@@ -98,7 +102,7 @@ export class ProvisioningService {
     sshHost: string
     sshUser?: string
     sshPassword?: string
-    openrouterKey: string
+    plan?: string
   }) {
     const brief = await this.prisma.brief.findUnique({
       where: { id: params.briefId },
@@ -108,23 +112,43 @@ export class ProvisioningService {
 
     const data = brief.dataJson as Record<string, any>
     const botName = data.botName || brief.title || 'Ассистент'
+    const plan = params.plan || 'PLUS'
 
-    // 1. Генерируем уникальный username для бота
+    // 1. Создаём/получаем OpenRouter ключ для пользователя
+    let orKey: string
+    if (brief.user.orApiKey) {
+      // Уже есть — переиспользуем
+      orKey = brief.user.orApiKey
+      this.logger.log(`Reusing existing OR key for user ${params.userId}`)
+    } else {
+      // Создаём новый с лимитом по плану
+      this.logger.log(`Creating OR key for user ${params.userId} plan=${plan}`)
+      const keyResult = await this.or.createKeyForUser(params.userId, plan)
+      orKey = keyResult.key
+      // Сохраняем в БД
+      await this.prisma.user.update({
+        where: { id: params.userId },
+        data: { orApiKey: keyResult.key, orApiKeyHash: keyResult.hash },
+      })
+    }
+
+    // 2. Генерируем уникальный username для бота
     const slug = `mv_${params.userId.slice(0, 6)}_${params.briefId.slice(0, 6)}_bot`
       .replace(/[^a-z0-9_]/gi, '_')
       .toLowerCase()
 
-    // 2. Создаём бота через BotFather
+    // 3. Создаём бота через BotFather
     this.logger.log(`Creating bot: ${botName} (@${slug})`)
     const bot = await this.createBot(botName, slug)
 
-    // 3. Сохраняем botName в бриф
+    // 4. Сохраняем botName в бриф
     await this.prisma.brief.update({
       where: { id: params.briefId },
       data: { botName: `@${bot.username}`, botStatus: 'deploying' },
     })
 
-    // 4. Деплоим на VPS
+    // 5. Деплоим на VPS с правильной моделью по плану
+    const model = PLAN_MODELS[plan.toUpperCase()] || PLAN_MODELS.PLUS
     const deployResult = await this.deployAssistant({
       briefId: params.briefId,
       userId: params.userId,
@@ -132,13 +156,16 @@ export class ProvisioningService {
       sshUser: params.sshUser || 'root',
       sshPassword: params.sshPassword || '',
       botToken: bot.token,
-      openrouterKey: params.openrouterKey,
+      openrouterKey: orKey,
+      model,
       briefData: data,
     })
 
     return {
       bot: { token: bot.token, username: bot.username },
       deploy: deployResult,
+      plan,
+      model,
     }
   }
 
@@ -183,6 +210,7 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
   private buildDeployScript(params: {
     botToken: string
     openrouterKey: string
+    model: string
     soul: string
     user: string
     userId: string
@@ -218,6 +246,10 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     }
     if (baseConfig.agents?.defaults) {
       baseConfig.agents.defaults.workspace = `${ASSISTANT_HOME}/.openclaw/workspace`
+      baseConfig.agents.defaults.model = {
+        primary: `openrouter/${params.model}`,
+        fallbacks: ['openrouter/auto'],
+      }
     }
     const configJson = JSON.stringify(baseConfig, null, 2)
 
