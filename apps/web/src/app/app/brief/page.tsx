@@ -116,11 +116,28 @@ export default function BriefListPage() {
                 <div className={styles.botRow}>
                   <span className={styles.botDot} style={{ background: botSt.color }} />
                   <span className={styles.botLabel}>
-                    {b.botName ? `Бот ${b.botName}` : 'Бот'}: <span style={{ color: botSt.color }}>{botSt.label}</span>
+                    <span style={{ color: botSt.color }}>{botSt.label}</span>
                   </span>
                 </div>
 
-                <div className={styles.editHint}>Нажмите чтобы редактировать →</div>
+                {b.botName && (
+                  <div className={styles.botAddress}>{b.botName}</div>
+                )}
+
+                <div className={styles.cardFooter}>
+                  <div className={styles.editHint}>Редактировать →</div>
+                  {b.botName && b.botStatus === 'active' && (
+                    <a
+                      href={`https://t.me/${b.botName.replace(/^@/, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.tgBtn}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      ✈ Написать
+                    </a>
+                  )}
+                </div>
               </div>
             )
           })}

@@ -32,7 +32,9 @@ const BOT_STATUS: Record<string, { label: string; color: string }> = {
   error: { label: 'Ошибка', color: '#ff4d4f' },
 }
 
-function StatusItem({ ok, label, sub, href }: { ok: boolean; label: string; sub?: string; href?: string }) {
+function StatusItem({ ok, label, sub, href, tgUsername }: {
+  ok: boolean; label: string; sub?: string; href?: string; tgUsername?: string
+}) {
   return (
     <div className={styles.statusItem}>
       <div className={`${styles.statusDot} ${ok ? styles.dotOk : styles.dotWarn}`} />
@@ -43,7 +45,17 @@ function StatusItem({ ok, label, sub, href }: { ok: boolean; label: string; sub?
       {!ok && href && (
         <Link href={href} className={styles.statusAction}>Заполнить →</Link>
       )}
-      {ok && <span className={styles.statusBadge}>✓</span>}
+      {ok && tgUsername && (
+        <a
+          href={`https://t.me/${tgUsername.replace(/^@/, '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.tgBtn}
+        >
+          ✈ Написать
+        </a>
+      )}
+      {ok && !tgUsername && <span className={styles.statusBadge}>✓</span>}
     </div>
   )
 }
@@ -125,12 +137,14 @@ export default function DashboardPage() {
                   <StatusItem ok={false} label="Ассистент" sub="Создайте первого бота чтобы начать" href="/app/brief" />
                 ) : sysStatus.briefs.map(b => {
                   const st = BOT_STATUS[b.botStatus] || BOT_STATUS.pending
+                  const isActive = b.botStatus === 'active'
                   return (
                     <StatusItem
                       key={b.id}
-                      ok={b.botStatus === 'active'}
+                      ok={isActive}
                       label={`Ассистент «${b.title}»`}
-                      sub={`${b.botName ? `${b.botName}: ` : ''}${st.label}`}
+                      sub={b.botName ? `${b.botName} · ${st.label}` : st.label}
+                      tgUsername={isActive && b.botName ? b.botName : undefined}
                     />
                   )
                 })}
