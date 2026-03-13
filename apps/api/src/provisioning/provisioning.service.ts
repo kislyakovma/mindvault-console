@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
 import * as https from 'https'
 import * as http from 'http'
+import * as fs from 'fs'
+import * as os from 'os'
 
 @Injectable()
 export class ProvisioningService {
@@ -196,6 +198,29 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     // Порт gateway: уникальный на основе hash briefId (19000-19999)
     const port = 19000 + (parseInt(params.briefId.replace(/-/g, '').slice(0, 4), 16) % 1000)
 
+    // Читаем текущий конфиг основного сервера как шаблон
+    let baseConfig: Record<string, any> = {}
+    try {
+      const raw = fs.readFileSync(`${os.homedir()}/.openclaw/openclaw.json`, 'utf8')
+      baseConfig = JSON.parse(raw)
+    } catch { /* используем пустой конфиг */ }
+
+    // Убираем ключи которых нет в схеме OpenClaw
+    for (const k of ['meta', 'wizard', 'auth', 'tools', 'messages', 'commands', 'session']) {
+      delete baseConfig[k]
+    }
+    // Обновляем нужные поля
+    baseConfig.channels = { telegram: { token: params.botToken, groupPolicy: 'deny' } }
+    if (baseConfig.gateway) {
+      baseConfig.gateway.port = port
+      baseConfig.gateway.bind = 'loopback'
+      baseConfig.gateway.auth = { mode: 'none' }
+    }
+    if (baseConfig.agents?.defaults) {
+      baseConfig.agents.defaults.workspace = `${ASSISTANT_HOME}/.openclaw/workspace`
+    }
+    const configJson = JSON.stringify(baseConfig, null, 2)
+
     return `#!/bin/bash
 set -e
 
@@ -213,38 +238,10 @@ fi
 
 # 2. Создаём директорию ассистента
 mkdir -p "$ASSISTANT_HOME/.openclaw/workspace/vault"
-mkdir -p "$ASSISTANT_HOME/.openclaw/agents"
 
-# 3. Конфиг openclaw (~/.openclaw/openclaw.json в ASSISTANT_HOME)
+# 3. Конфиг openclaw (шаблон с основного сервера, отпатченный)
 cat > "$ASSISTANT_HOME/.openclaw/openclaw.json" << 'CONFIGEOF'
-{
-  "meta": { "version": 1 },
-  "wizard": { "completed": true },
-  "auth": {},
-  "agents": {
-    "defaults": {
-      "model": { "primary": "openrouter/anthropic/claude-sonnet-4-6" },
-      "workspaceDir": "${ASSISTANT_HOME}/.openclaw/workspace"
-    }
-  },
-  "tools": {},
-  "messages": {},
-  "commands": {},
-  "session": {},
-  "channels": {
-    "telegram": {
-      "token": "${params.botToken}",
-      "groupPolicy": "deny"
-    }
-  },
-  "gateway": {
-    "port": ${port},
-    "mode": "local",
-    "bind": "loopback",
-    "auth": { "mode": "none" }
-  },
-  "plugins": {}
-}
+${configJson}
 CONFIGEOF
 
 # 4. SOUL.md
@@ -303,10 +300,8 @@ systemctl is-active "$SERVICE" && echo "DEPLOYED_OK: $SERVICE port $PORT" || (jo
     // Запускаем через sshpass + ssh
     const { exec } = await import('child_process')
     const { promisify } = await import('util')
-    const execAsync = promisify(exec)
-    const fs = await import('fs')
-    const os = await import('os')
     const path = await import('path')
+    const execAsync = promisify(exec)
 
     // Пишем скрипт во временный файл
     const tmpFile = path.join(os.tmpdir(), `deploy_${Date.now()}.sh`)
