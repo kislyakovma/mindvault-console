@@ -61,6 +61,7 @@ export class ProvisioningService {
       const deployScript = this.buildDeployScript({
         botToken,
         openrouterKey,
+        groqApiKey: this.config.get<string>('GROQ_API_KEY'),
         model: params.model || PLAN_MODELS.PLUS,
         telegramId: params.telegramId,
         soul,
@@ -212,6 +213,7 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
   private buildDeployScript(params: {
     botToken: string
     openrouterKey: string
+    groqApiKey?: string
     model: string
     telegramId?: string | null
     soul: string
@@ -259,6 +261,16 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
           maxConcurrent: 1,
           subagents: { maxConcurrent: 2 },
         }
+      },
+      tools: {
+        media: {
+          audio: {
+            enabled: true,
+            models: [
+              { provider: 'groq', model: 'whisper-large-v3-turbo' },
+            ],
+          },
+        },
       },
       plugins: {},
     }
@@ -324,9 +336,10 @@ else
     --memory=2g \
     --cpus=1 \
     -e OPENROUTER_API_KEY="${params.openrouterKey}" \
+    -e GROQ_API_KEY="${params.groqApiKey || ''}" \
+    -e NODE_OPTIONS="--max-old-space-size=1536" \
     -e HOME=/home/oc \
     -v "$DATA_DIR/.openclaw:/home/oc/.openclaw" \
-    --network none \
     "$IMAGE"
 fi
 
