@@ -148,8 +148,8 @@ export default function BriefListPage() {
                       />
                     </div>
                     <div className={styles.usageLabel}>
-                      <span>${((b.usageCents ?? 0) / 100).toFixed(2)}</span>
-                      <span style={{ color: '#6b6b8a' }}> / ${((b.limitCents ?? 0) / 100).toFixed(0)}</span>
+                      <span style={{ color: usageColor }}>{usagePct}%</span>
+                      <span style={{ color: '#6b6b8a' }}> использовано</span>
                     </div>
                   </div>
                 )}
