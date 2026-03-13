@@ -298,6 +298,21 @@ if [ -f "/root/.openclaw/workspace/AGENTS.md" ]; then
   cp /root/.openclaw/workspace/AGENTS.md "$DATA_DIR/.openclaw/workspace/AGENTS.md"
 fi
 
+# IDENTITY.md — генерируем из брифа
+cat > "$DATA_DIR/.openclaw/workspace/IDENTITY.md" << 'IDEOF'
+# IDENTITY.md
+
+- **Name:** ${params.briefData.botName || 'Ассистент'}
+- **Creature:** AI-ассистент и «второй мозг»
+- **Vibe:** ${params.briefData.commStyle || 'дружелюбный и профессиональный'}
+- **Emoji:** 🧠
+- **User:** ${params.briefData.telegramUsername ? `@${params.briefData.telegramUsername}` : 'пользователь'}
+IDEOF
+
+# Пустой HEARTBEAT и TOOLS
+echo "" > "$DATA_DIR/.openclaw/workspace/HEARTBEAT.md"
+echo "" > "$DATA_DIR/.openclaw/workspace/TOOLS.md"
+
 echo "[4/4] Запускаем Docker-контейнер..."
 if docker inspect "$CONTAINER" &>/dev/null; then
   echo "  → Контейнер уже существует, обновляем конфиг и рестартуем..."
