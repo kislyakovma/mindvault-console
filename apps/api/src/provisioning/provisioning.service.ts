@@ -229,154 +229,103 @@ ${data.goals ? `- Цели: ${data.goals}` : ''}
     // Порт gateway: уникальный на основе hash briefId (19000-19999)
     const port = 19000 + (parseInt(params.briefId.replace(/-/g, '').slice(0, 4), 16) % 1000)
 
-    // Читаем текущий конфиг основного сервера как шаблон
-    let baseConfig: Record<string, any> = {}
-    try {
-      const raw = fs.readFileSync(`${os.homedir()}/.openclaw/openclaw.json`, 'utf8')
-      baseConfig = JSON.parse(raw)
-    } catch { /* используем пустой конфиг */ }
-
-    // Убираем ключи которых нет в схеме OpenClaw
-    for (const k of ['meta', 'wizard', 'auth', 'tools', 'messages', 'commands', 'session']) {
-      delete baseConfig[k]
-    }
     // Telegram channel — allowFrom содержит Telegram ID создателя
     const allowFrom = params.telegramId ? [params.telegramId] : ['*']
-    baseConfig.channels = {
-      telegram: {
-        enabled: true,
-        botToken: params.botToken,
-        groupPolicy: 'disabled',
-        dmPolicy: 'allowlist',
-        allowFrom,
-        streaming: 'partial',
-      }
-    }
-    // Gateway — явно, без лишнего
-    baseConfig.gateway = {
-      port,
-      mode: 'local',
-      bind: 'loopback',
-      auth: { mode: 'none' },
-      tailscale: { mode: 'off', resetOnExit: false },
-    }
-    // Agent — минимальный конфиг, без лишних моделей (источник OOM)
-    baseConfig.agents = {
-      defaults: {
-        workspace: `${ASSISTANT_HOME}/.openclaw/workspace`,
-        model: { primary: `openrouter/${params.model}` },
-        compaction: { mode: 'safeguard' },
-        maxConcurrent: 1,
-        subagents: { maxConcurrent: 2 },
-      }
-    }
-    // Убираем тяжёлые ненужные плагины
-    baseConfig.plugins = {}
-    const configJson = JSON.stringify(baseConfig, null, 2)
+    const dmPolicy = params.telegramId ? 'allowlist' : 'open'
 
-    // Linux username: mv_ + первые 8 символов userId (только a-z0-9)
-    const linuxUser = `mv_${params.userId.replace(/-/g, '').slice(0, 8)}`
+    const ocConfig = {
+      channels: {
+        telegram: {
+          enabled: true,
+          botToken: params.botToken,
+          groupPolicy: 'disabled',
+          dmPolicy,
+          allowFrom,
+          streaming: 'partial',
+        }
+      },
+      gateway: {
+        port: 19465,
+        mode: 'local',
+        bind: '0.0.0.0',
+        auth: { mode: 'none' },
+        tailscale: { mode: 'off', resetOnExit: false },
+      },
+      agents: {
+        defaults: {
+          workspace: '/home/oc/.openclaw/workspace',
+          model: { primary: `openrouter/${params.model}` },
+          compaction: { mode: 'safeguard' },
+          maxConcurrent: 1,
+          subagents: { maxConcurrent: 2 },
+        }
+      },
+      plugins: {},
+    }
+    const configJson = JSON.stringify(ocConfig, null, 2)
+    const CONTAINER = SERVICE
 
     return `#!/bin/bash
-# MindVault Assistant Deploy Script
+# MindVault Assistant Deploy Script (Docker)
 # briefId: ${params.briefId}
 # userId:  ${params.userId}
-# service: ${SERVICE}
-# port:    ${port}
+# container: ${CONTAINER}
 set -euo pipefail
 
-ASSISTANT_HOME="${ASSISTANT_HOME}"
-SERVICE="${SERVICE}"
-PORT="${port}"
-NODE_BIN="/usr/bin/node"
-OC_MAIN="/usr/lib/node_modules/openclaw/dist/index.js"
-LINUX_USER="${linuxUser}"
+DATA_DIR="${ASSISTANT_HOME}"
+CONTAINER="${CONTAINER}"
+IMAGE="mindvault-assistant:latest"
 
-echo "[1/7] Создаём изолированного Linux user..."
-if ! id "$LINUX_USER" &>/dev/null; then
-  useradd --system --no-create-home --shell /usr/sbin/nologin "$LINUX_USER"
-  echo "  → Создан system user: $LINUX_USER"
-else
-  echo "  → Уже существует: $LINUX_USER"
-fi
+echo "[1/4] Создаём директорию данных..."
+mkdir -p "$DATA_DIR/.openclaw/workspace/vault"
+chmod 700 "$DATA_DIR"
 
-echo "[2/7] Создаём директорию ассистента..."
-mkdir -p "$ASSISTANT_HOME/.openclaw/workspace/vault"
-# Права до записи файлов — пишем от root, потом передадим
-chmod 700 "$ASSISTANT_HOME"
-
-echo "[3/7] Записываем конфиг openclaw..."
-cat > "$ASSISTANT_HOME/.openclaw/openclaw.json" << 'CONFIGEOF'
+echo "[2/4] Записываем конфиг openclaw..."
+cat > "$DATA_DIR/.openclaw/openclaw.json" << 'CONFIGEOF'
 ${configJson}
 CONFIGEOF
 
-echo "[4/7] Записываем workspace (SOUL, USER, AGENTS)..."
-cat > "$ASSISTANT_HOME/.openclaw/workspace/SOUL.md" << 'SOULEOF'
+echo "[3/4] Записываем workspace (SOUL, USER, AGENTS)..."
+cat > "$DATA_DIR/.openclaw/workspace/SOUL.md" << 'SOULEOF'
 ${soulEscaped}
 SOULEOF
 
-cat > "$ASSISTANT_HOME/.openclaw/workspace/USER.md" << 'USEREOF'
+cat > "$DATA_DIR/.openclaw/workspace/USER.md" << 'USEREOF'
 ${userEscaped}
 USEREOF
 
-# Копируем AGENTS.md с основного workspace
 if [ -f "/root/.openclaw/workspace/AGENTS.md" ]; then
-  cp /root/.openclaw/workspace/AGENTS.md "$ASSISTANT_HOME/.openclaw/workspace/AGENTS.md"
+  cp /root/.openclaw/workspace/AGENTS.md "$DATA_DIR/.openclaw/workspace/AGENTS.md"
 fi
 
-echo "[5/7] Записываем .env..."
-cat > "$ASSISTANT_HOME/.env" << 'ENVEOF'
-OPENROUTER_API_KEY=${params.openrouterKey}
-ENVEOF
-chmod 600 "$ASSISTANT_HOME/.env"
+echo "[4/4] Запускаем Docker-контейнер..."
+docker rm -f "$CONTAINER" 2>/dev/null || true
+docker run -d \
+  --name "$CONTAINER" \
+  --restart unless-stopped \
+  --memory=1g --memory-swap=1g \
+  --cpus=1 \
+  -e OPENROUTER_API_KEY="${params.openrouterKey}" \
+  -e HOME=/home/oc \
+  -v "$DATA_DIR/.openclaw:/home/oc/.openclaw" \
+  --network none \
+  "$IMAGE"
 
-echo "[6/7] Устанавливаем права (owner: $LINUX_USER)..."
-chown -R "$LINUX_USER:$LINUX_USER" "$ASSISTANT_HOME"
-# Директория недоступна другим пользователям
-chmod 700 "$ASSISTANT_HOME"
+echo "Ожидаем запуска (до 30s)..."
+for i in $(seq 1 6); do
+  sleep 5
+  STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER" 2>/dev/null || echo "missing")
+  if [ "$STATUS" = "running" ]; then
+    echo "DEPLOYED_OK: $CONTAINER"
+    exit 0
+  fi
+  echo "  [$i/6] status=$STATUS..."
+done
 
-echo "[7/7] Создаём systemd сервис..."
-cat > "/etc/systemd/system/$SERVICE.service" << SVCEOF
-[Unit]
-Description=MindVault Assistant ${params.briefId.slice(0, 8)}
-After=network.target
-
-[Service]
-User=$LINUX_USER
-Group=$LINUX_USER
-Environment=HOME=$ASSISTANT_HOME
-EnvironmentFile=$ASSISTANT_HOME/.env
-ExecStart=$NODE_BIN --max-old-space-size=768 $OC_MAIN gateway --port $PORT
-Restart=always
-RestartSec=15
-TimeoutStartSec=60
-
-# Изоляция процесса
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ReadWritePaths=$ASSISTANT_HOME
-CapabilityBoundingSet=
-AmbientCapabilities=
-
-[Install]
-WantedBy=multi-user.target
-SVCEOF
-
-systemctl daemon-reload
-systemctl enable "$SERVICE"
-systemctl restart "$SERVICE"
-
-echo "Ожидаем запуска..."
-sleep 6
-if systemctl is-active "$SERVICE" --quiet; then
-  echo "DEPLOYED_OK: $SERVICE port $PORT"
-else
-  echo "DEPLOY_FAILED: статус сервиса:"
-  journalctl -u "$SERVICE" -n 15 --no-pager
-  exit 1
-fi
-`
+echo "DEPLOY_FAILED: логи контейнера:"
+docker logs "$CONTAINER" --tail 20
+exit 1
+\`
   }
 
   private async runDeployScriptLocally(script: string): Promise<void> {
