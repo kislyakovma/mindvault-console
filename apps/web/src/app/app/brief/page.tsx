@@ -102,8 +102,8 @@ export default function BriefListPage() {
         <div className={styles.grid}>
           {briefs.map(b => {
             const botSt = BOT_STATUS_LABELS[b.botStatus] || BOT_STATUS_LABELS.pending
-            const usagePct = b.usageCents && b.limitCents
-              ? Math.min(100, Math.round((b.usageCents / b.limitCents) * 100))
+            const usagePct = b.limitCents !== null && b.limitCents > 0
+              ? Math.min(100, Math.round(((b.usageCents ?? 0) / b.limitCents) * 100))
               : null
             const usageColor = usagePct === null ? '#6b6b8a'
               : usagePct >= 90 ? '#ff4d4f'
