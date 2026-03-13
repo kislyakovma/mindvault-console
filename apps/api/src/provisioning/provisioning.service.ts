@@ -275,6 +275,7 @@ Description=MindVault Assistant ${params.briefId.slice(0, 8)}
 After=network.target
 
 [Service]
+Environment=HOME=$ASSISTANT_HOME
 EnvironmentFile=$ASSISTANT_HOME/.env
 ExecStart=$NODE_BIN $OC_MAIN gateway --port $PORT
 Restart=always
