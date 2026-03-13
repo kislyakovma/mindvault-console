@@ -56,6 +56,7 @@ model Brief {
   dataJson  Json        @map("data_json")
   status    BriefStatus @default(DRAFT)
   botName   String?     @map("bot_name")
+  botToken  String?     @map("bot_token")
   botStatus String      @default("pending") @map("bot_status")
   createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")

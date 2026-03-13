@@ -125,19 +125,28 @@ export class ProvisioningService {
       })
     }
 
-    // 2. Генерируем уникальный username для бота
-    const slug = `mv_${params.userId.slice(0, 6)}_${params.briefId.slice(0, 6)}_bot`
-      .replace(/[^a-z0-9_]/gi, '_')
-      .toLowerCase()
+    // 2. Бот: переиспользуем если уже создан, иначе создаём через BotFather
+    let bot: { token: string; username: string }
+    if (brief.botToken && brief.botName) {
+      // Re-provision — бот уже существует
+      bot = { token: brief.botToken, username: brief.botName.replace(/^@/, '') }
+      this.logger.log(`Reusing existing bot @${bot.username} for brief ${params.briefId}`)
+    } else {
+      const slug = `mv_${params.userId.slice(0, 6)}_${params.briefId.slice(0, 6)}_bot`
+        .replace(/[^a-z0-9_]/gi, '_')
+        .toLowerCase()
+      this.logger.log(`Creating bot: ${botName} (@${slug})`)
+      bot = await this.createBot(botName, slug)
+    }
 
-    // 3. Создаём бота через BotFather
-    this.logger.log(`Creating bot: ${botName} (@${slug})`)
-    const bot = await this.createBot(botName, slug)
-
-    // 4. Сохраняем botName в бриф
+    // 3. Сохраняем botName + botToken в бриф
     await this.prisma.brief.update({
       where: { id: params.briefId },
-      data: { botName: `@${bot.username}`, botStatus: 'deploying' },
+      data: {
+        botName: `@${bot.username}`,
+        botToken: bot.token,
+        botStatus: 'deploying',
+      },
     })
 
     // 5. Деплоим локально на основном сервере
